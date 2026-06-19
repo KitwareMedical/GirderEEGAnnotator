@@ -58,19 +58,20 @@ class PortalLogic:
 
     def set_ui(self, ui: PortalUI) -> None:
         ui.eeg_media_selected.connect(self._select_eeg_media)
-        ui.save_annotations_clicked.connect(self._loader_logic.save_eeg_annotations)
+        ui.save_annotations_clicked.connect(self._save_eeg_annotations)
         ui.previous_eeg_clicked.connect(self._select_previous_media)
         ui.next_eeg_clicked.connect(self._select_next_media)
         # ui.approve_annotation_clicked.connect(self._approve_annotations)
 
     def _select_eeg_media(self, eeg_media: EEGMedia) -> None:
         self._current_eeg_media.set_dataclass(eeg_media)
-        #TODO async load
         try:
             self._loader_logic.load_eeg_media_files(eeg_media._id)
         except Exception as e:
             self._current_eeg_media.set_dataclass(EEGMedia())
 
+    def _save_eeg_annotations(self) -> None:
+        self._loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)
 
     def _select_next_media(self):
         if len(self.data.eeg_media_list) == 0:

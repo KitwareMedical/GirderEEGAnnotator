@@ -149,7 +149,7 @@ class LoaderLogic:
 
         create_async_task(self.load_tracker, _load)
 
-    def save_eeg_annotations(self) -> None:
+    def save_eeg_annotations(self, eeg_media_id: str) -> None:
         if self._current_tmpdir is None:
             raise RuntimeError("Temporary directory is not initialized")
 
@@ -161,4 +161,4 @@ class LoaderLogic:
         if not Path(annotation_file.path).exists():
             raise FileNotFoundError(f"Annotation file does not exist: {annotation_file.path}")
 
-        self.server.controller.save_annoations_file(annotation_file)
+        self.server.controller.save_eeg_annotations(eeg_media_id, annotation_file)

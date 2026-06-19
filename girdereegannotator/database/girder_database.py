@@ -112,4 +112,4 @@ class GirderDatabase(DatabaseInterface):
         return media_files
 
     def save_eeg_annotations(self, eeg_media_id: str, eeg_annotation_file: EEGMediaFile):
-        pass
+        self.girder_client.uploadFileToItem(eeg_media_id, eeg_annotation_file.path)
