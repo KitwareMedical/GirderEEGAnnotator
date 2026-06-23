@@ -7,7 +7,7 @@ from attr import dataclass
 from girder_client import GirderClient
 
 from .interface_database import DatabaseInterface
-from .models import Collection, EEGMedia, EEGMediaFile, GirderModel, Model, User
+from .models import Collection, EEGMedia, EEGMediaFile, EEGMediaMetadata, GirderModel, Model, User
 
 T = TypeVar("T", bound=Model)
 
@@ -50,11 +50,18 @@ class GirderDatabase(DatabaseInterface):
         if doc.get("created"):
             doc["created"] = self.format_date(doc["created"])
         return model(**self._clean_doc(doc, model))
+    
+    def _eeg_media_as_dataclass(self, eeg_media: GirderModel) -> User:
+        eeg_media["meta"] = self._document_as_dataclass(eeg_media["meta"], EEGMediaMetadata)
+        return self._document_as_dataclass(eeg_media, EEGMedia)
 
     def _user_as_dataclass(self, user: GirderModel) -> User:
         user["first_name"] = user["firstName"]
         user["last_name"] = user["lastName"]
         return self._document_as_dataclass(user, User)
+    
+    def _update_media_metadata(self, eeg_media_id: str, eeg_media_metadata: EEGMediaMetadata) -> EEGMedia:
+        return self.girder_client.addMetadataToItem(eeg_media_id, eeg_media_metadata.as_dict())
 
     def logout(self) -> None:
         self.girder_client.delete(f"{self.resources.user}/authentication")
@@ -92,11 +99,11 @@ class GirderDatabase(DatabaseInterface):
             path=self.resources.media,
             parameters=params,
         )
-        return [self._document_as_dataclass(media, EEGMedia) for media in media_items]
+        return [self._eeg_media_as_dataclass(media) for media in media_items]
 
 
-    def download_eeg_media_files(self, media_id: str, download_dir: str) -> list[EEGMediaFile]:
-        girder_media_files = self.girder_client.listResource(path=f"{self.resources.media}/{media_id}/files")
+    def download_eeg_media_files(self, eeg_media_id: str, download_dir: str) -> list[EEGMediaFile]:
+        girder_media_files = self.girder_client.listResource(path=f"{self.resources.media}/{eeg_media_id}/files")
         media_files = []
 
         for media_file in girder_media_files:
@@ -111,5 +118,7 @@ class GirderDatabase(DatabaseInterface):
 
         return media_files
 
-    def save_eeg_annotations(self, eeg_media_id: str, eeg_annotation_file: EEGMediaFile):
+    def save_eeg_annotations(self, eeg_media_id: str, eeg_annotation_file: EEGMediaFile) -> str:
         self.girder_client.uploadFileToItem(eeg_media_id, eeg_annotation_file.path)
+        annotation_id, _ = self.girder_client.isFileCurrent(eeg_media_id, eeg_annotation_file.name, eeg_annotation_file.path)
+        return self._update_media_metadata(eeg_media_id, EEGMediaMetadata(annotation_id=annotation_id))

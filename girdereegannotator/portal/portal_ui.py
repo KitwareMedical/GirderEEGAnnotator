@@ -8,7 +8,7 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMedia, EEGMediaFile
+from girdereegannotator.database.models import EEGMedia, EEGMediaFile, EEGMediaMetadata
 
 
 @dataclass
@@ -48,6 +48,7 @@ class PortalUI:
             v3.VIcon(icon=icon)
 
     def _select_eeg_media(self, eeg_media_dict: dict[str, Any]) -> None:
+        eeg_media_dict["meta"] = EEGMediaMetadata(**eeg_media_dict["meta"])
         eeg_media = EEGMedia(**eeg_media_dict)
         self.eeg_media_selected(eeg_media)
 

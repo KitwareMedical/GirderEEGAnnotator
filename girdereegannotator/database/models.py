@@ -27,9 +27,15 @@ class Collection(Model):
 
 
 @dataclass
+class EEGMediaMetadata(Model):
+    annotation_id: str | None = None
+
+
+@dataclass
 class EEGMedia(Model):
     _id: str | None = None
     name: str | None = None
+    meta: EEGMediaMetadata = field(default_factory=EEGMediaMetadata)
 
 
 @dataclass

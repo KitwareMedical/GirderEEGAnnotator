@@ -8,7 +8,7 @@ from trame_server import Server
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMediaFile
+from girdereegannotator.database.models import EEGMedia, EEGMediaFile
 from .portal_ui import LoaderState
 
 ANNOTATION_FILE_SUFFIX = "annotations.csv"
@@ -128,7 +128,7 @@ class LoaderLogic:
         try:
             self.eeg_media_loaded(self.data.eeg_file.path)
         except Exception as e:
-            raise AnnotatorLoadingError("Could not load data into EEG Annotator") from e
+            raise AnnotatorLoadingError(f"Could not load data into EEG Annotator: {e}") from e
 
     def _reset_state(self) -> None:
         self.data.eeg_file = None
@@ -149,7 +149,7 @@ class LoaderLogic:
 
         create_async_task(self.load_tracker, _load)
 
-    def save_eeg_annotations(self, eeg_media_id: str) -> None:
+    def save_eeg_annotations(self, eeg_media_id: str) -> EEGMedia:
         if self._current_tmpdir is None:
             raise RuntimeError("Temporary directory is not initialized")
 
@@ -161,4 +161,4 @@ class LoaderLogic:
         if not Path(annotation_file.path).exists():
             raise FileNotFoundError(f"Annotation file does not exist: {annotation_file.path}")
 
-        self.server.controller.save_eeg_annotations(eeg_media_id, annotation_file)
+        return self.server.controller.save_eeg_annotations(eeg_media_id, annotation_file)

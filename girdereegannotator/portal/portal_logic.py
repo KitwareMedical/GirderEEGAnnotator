@@ -57,21 +57,26 @@ class PortalLogic:
         self.data.eeg_media_list = self.server.controller.list_eeg_media()
 
     def set_ui(self, ui: PortalUI) -> None:
-        ui.eeg_media_selected.connect(self._select_eeg_media)
+        ui.eeg_media_selected.connect(self._set_current_eeg_media)
         ui.save_annotations_clicked.connect(self._save_eeg_annotations)
         ui.previous_eeg_clicked.connect(self._select_previous_media)
         ui.next_eeg_clicked.connect(self._select_next_media)
         # ui.approve_annotation_clicked.connect(self._approve_annotations)
 
-    def _select_eeg_media(self, eeg_media: EEGMedia) -> None:
+    def _set_current_eeg_media(self, eeg_media: EEGMedia, update_media_list: bool = False) -> None:
         self._current_eeg_media.set_dataclass(eeg_media)
         try:
             self._loader_logic.load_eeg_media_files(eeg_media._id)
+            if update_media_list:
+                self.data.eeg_media_list = [
+                    eeg_media if eeg_media._id == media._id else media for media in self.data.eeg_media_list
+                ]
         except Exception as e:
             self._current_eeg_media.set_dataclass(EEGMedia())
 
     def _save_eeg_annotations(self) -> None:
-        self._loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)
+        eeg_media = self._loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)
+        self._set_current_eeg_media(eeg_media, update_media_list=True)
 
     def _select_next_media(self):
         if len(self.data.eeg_media_list) == 0:
@@ -84,7 +89,7 @@ class PortalLogic:
             next_index = 0
         else:
             next_index = eeg_media_index + 1
-        self._select_eeg_media(self.data.eeg_media_list[next_index])
+        self._set_current_eeg_media(self.data.eeg_media_list[next_index])
 
     def _select_previous_media(self):
         if len(self.data.eeg_media_list) == 0:
@@ -97,4 +102,4 @@ class PortalLogic:
             previous_index = 0
         else:
             previous_index = eeg_media_index - 1
-        self._select_eeg_media(self.data.eeg_media_list[previous_index])
+        self._set_current_eeg_media(self.data.eeg_media_list[previous_index])
