@@ -1,7 +1,4 @@
-from trame.ui.vuetify3 import VAppLayout
 from trame.widgets import html, rca
-from trame.widgets.vuetify3 import VMain
-from trame_server import Server
 
 from .eeg_annotator_shortcuts_panel import ShortcutsPanel
 

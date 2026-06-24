@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Any
+
 from yaml import safe_load
 
-from .interface_database import DatabaseInterface
 from .girder_database import GirderDatabase
+from .interface_database import DatabaseInterface
 
 
 def load_config(path: str) -> Any:

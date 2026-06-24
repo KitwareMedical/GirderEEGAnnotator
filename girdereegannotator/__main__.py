@@ -1,7 +1,7 @@
 from trame_server.core import Server
 
 from girdereegannotator.core import AnnotatorApp
-from girdereegannotator.database.database_config import load_config, get_interface
+from girdereegannotator.database.database_config import get_interface, load_config
 
 
 def main(server: Server | None = None, **kwargs) -> None:

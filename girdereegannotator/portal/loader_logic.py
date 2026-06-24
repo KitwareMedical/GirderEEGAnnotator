@@ -1,14 +1,16 @@
-from inspect import iscoroutinefunction
 import tempfile
+from collections.abc import Callable
+from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from trame_server.utils.asynchronous import create_task
 from trame_server import Server
+from trame_server.utils.asynchronous import create_task
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia, EEGMediaFile
+
 from .portal_ui import LoaderState
 
 ANNOTATION_FILE_SUFFIX = "annotations.csv"
@@ -103,7 +105,9 @@ class LoaderLogic:
         has_annotation_file = len(eeg_media_files) == 2 and eeg_media_files[1].name == annotation_file_name
 
         self.data.eeg_annotation_file = (
-            eeg_media_files[1] if has_annotation_file else EEGMediaFile(
+            eeg_media_files[1]
+            if has_annotation_file
+            else EEGMediaFile(
                 name=annotation_file_name,
                 path=str(annotation_file_path),
             )
@@ -113,8 +117,7 @@ class LoaderLogic:
         self._create_tmp_dir()
 
         eeg_media_files: list[EEGMediaFile] = self.server.controller.download_eeg_media_files(
-            eeg_media_id,
-            self._current_tmpdir.name
+            eeg_media_id, self._current_tmpdir.name
         )
 
         if len(eeg_media_files) == 0:
@@ -122,7 +125,7 @@ class LoaderLogic:
 
         if not are_eeg_files(eeg_media_files):
             raise FileValidationError("EEG files are invalid")
-        
+
         self._format_eeg_files(eeg_media_files)
 
         try:
@@ -135,15 +138,15 @@ class LoaderLogic:
         self.data.eeg_annotation_file = None
 
     def load_eeg_media_files(self, eeg_media_id: str) -> None:
-        def _load():
+        def _load() -> None:
             try:
                 self._load_eeg_media_files(eeg_media_id)
 
-            except FileValidationError as e:
+            except FileValidationError:
                 self._reset_state()
                 raise
 
-            except AnnotatorLoadingError as e:
+            except AnnotatorLoadingError:
                 self._reset_state()
                 raise
 

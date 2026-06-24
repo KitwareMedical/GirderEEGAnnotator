@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from trame_dataclass.v2 import StateDataModel
-from trame_server.core import Server
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
+from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
@@ -58,23 +57,20 @@ class PortalUI:
             click=self.save_annotations_clicked,
             tooltip="Save annotations",
             disabled=(f"!{self.portal_state.name.eeg_media.name}",),
-
         )
         v3.VSpacer()
         self._build_icon_button(
             icon="mdi-chevron-left",
             click=self.previous_eeg_clicked,
             tooltip="Previous EEG",
-
         )
-        html.Div("{{ " +self.portal_state.name.eeg_media.name + " }}", classes="px-2")
+        html.Div("{{ " + self.portal_state.name.eeg_media.name + " }}", classes="px-2")
         self._build_icon_button(
             icon="mdi-chevron-right",
             click=self.next_eeg_clicked,
             tooltip="Next EEG",
         )
         v3.VSpacer()
-
 
     def build_drawer(self) -> None:
         with (
@@ -89,9 +85,9 @@ class PortalUI:
                     "trigger('"
                     f"{self.server.controller.trigger_name(self._select_eeg_media)}"
                     "', [eeg_media]).then(() => { trame.refs.eegview.$refs.rootElem.focus(); })"
-                )
+                ),
             ),
-            v3.Template(v_slot_append="{ isActive }")
+            v3.Template(v_slot_append="{ isActive }"),
         ):
             v3.VProgressCircular(
                 v_if=(f"isActive && {self.loader_state.name.eeg_loading}",),

@@ -1,8 +1,8 @@
-from typing import Any
 from dataclasses import asdict, dataclass, field, fields
-
+from typing import Any
 
 GirderModel = dict[str, Any]
+
 
 @dataclass
 class Model:

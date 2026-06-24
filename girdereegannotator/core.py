@@ -7,11 +7,13 @@ from trame.widgets import vuetify3 as v3
 from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 
-from girdereegannotator.database.interface_database import DatabaseInterface, register_interface
-from girdereegannotator.portal.portal_logic import PortalLogic
-
+from .database.interface_database import (
+    DatabaseInterface,
+    register_interface,
+)
 from .eeg_annotator import EGGAnnotatorLogic, EGGAnnotatorUI
 from .portal import PortalLogic, PortalUI
+
 
 @dataclass
 class AnnotatorState:
@@ -33,7 +35,7 @@ class AnnotatorLayout(VAppLayout):
             with v3.VAppBar(height=75) as self.app_bar:
                 v3.VAppBarNavIcon(
                     icon="mdi-menu",
-                    click=f"{self.typed_state.name.is_drawer_open} = !{self.typed_state.name.is_drawer_open}"
+                    click=f"{self.typed_state.name.is_drawer_open} = !{self.typed_state.name.is_drawer_open}",
                 )
 
             self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open)
@@ -71,12 +73,13 @@ class AnnotatorLayout(VAppLayout):
                     'target="_blank">© 2025 Kitware Inc.</a>'
                 )
 
+
 class AnnotatorUI:
     def __init__(self, server: Server):
         self.layout = AnnotatorLayout(server)
         self.portal_ui = PortalUI(server)
         self._build_ui()
-    
+
     def _build_ui(self) -> None:
         with self.layout:
             client.Style(
@@ -101,7 +104,7 @@ class AnnotatorLogic:
     def __init__(self, server: Server):
         self.server = server
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
-        
+
         self._portal_logic = PortalLogic(self.server)
         self._portal_logic.eeg_media_loaded.connect(self._on_eeg_files_loaded)
 
@@ -126,7 +129,7 @@ class AnnotatorApp(TrameApp):
     def set_ui(self) -> None:
         self._logic.set_ui(self._ui)
 
-    def register_interface(self, interface) -> None:
+    def register_interface(self, interface: DatabaseInterface) -> None:
         """Link all database APIs to controller"""
         if interface is not None:
             register_interface(interface, self.ctrl)
