@@ -8,6 +8,10 @@ from .models import Collection, EEGMedia, EEGMediaFile
 
 class DatabaseInterface(ABC):
     @abstractmethod
+    def login(self, username: str, password: str) -> None:
+        pass
+
+    @abstractmethod
     def logout(self) -> None:
         pass
 

@@ -69,11 +69,18 @@ class GirderDatabase(DatabaseInterface):
         return self._document_as_dataclass(user, User)
 
     def _update_media_metadata(self, eeg_media_id: str, eeg_media_metadata: EEGMediaMetadata) -> EEGMedia:
-        return self.girder_client.addMetadataToItem(eeg_media_id, eeg_media_metadata.as_dict())
+        media = self.girder_client.addMetadataToItem(eeg_media_id, eeg_media_metadata.as_dict())
+        return self._eeg_media_as_dataclass(media)
 
     def logout(self) -> None:
         self.girder_client.delete(f"{self.resources.user}/authentication")
         self.authenticated = False
+
+    def login(self, username: str, password: str) -> User:
+        if self.authenticated:
+            self.logout()
+        user = self.girder_client.authenticate(username, password)
+        return self._user_as_dataclass(user)
 
     def list_collections(
         self,
@@ -100,7 +107,7 @@ class GirderDatabase(DatabaseInterface):
     def list_eeg_media(
         self,
         sort: str = "created",
-        sort_dir: int = -1,
+        sort_dir: int = 1,
     ) -> list[EEGMedia]:
         params = {"text": "*.edf", "sort": sort, "sortdir": sort_dir, "offset": 0, "limit": None}
         media_items = self.girder_client.get(

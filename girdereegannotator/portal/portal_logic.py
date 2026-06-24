@@ -34,8 +34,6 @@ class PortalLogic:
         self._loader_logic = LoaderLogic(server)
         self._loader_logic.eeg_media_loaded.connect(self.eeg_media_loaded)
 
-        self.server.controller.on_server_ready.add(self._initialize)
-
     @property
     def name(self) -> PortalState:
         return self.typed_state.name
@@ -44,29 +42,31 @@ class PortalLogic:
     def data(self) -> PortalState:
         return self.typed_state.data
 
+    def reset_state(self) -> None:
+        self.typed_state.set_dataclass(PortalState())
+
     def _get_eeg_media_index(self) -> int:
         return next((i for i, item in enumerate(self.data.eeg_media_list) if item._id == self.data.eeg_media._id), None)
 
-    def _initialize(self, **_kwargs) -> None:
+    def set_eeg_media_list(self) -> None:
         self.data.eeg_media_list = self.server.controller.list_eeg_media()
 
     def set_ui(self, ui: PortalUI) -> None:
-        ui.eeg_media_selected.connect(self._set_current_eeg_media)
+        ui.eeg_media_selected.connect(self._on_eeg_media_selected)
         ui.save_annotations_clicked.connect(self._save_eeg_annotations)
         ui.previous_eeg_clicked.connect(self._select_previous_media)
         ui.next_eeg_clicked.connect(self._select_next_media)
-        # ui.approve_annotation_clicked.connect(self._approve_annotations)
+
+    def _on_eeg_media_selected(self, eeg_media: EEGMedia) -> None:
+        self._set_current_eeg_media(eeg_media)
+        self._loader_logic.load_eeg_media_files(eeg_media._id)
 
     def _set_current_eeg_media(self, eeg_media: EEGMedia, update_media_list: bool = False) -> None:
         self._current_eeg_media.set_dataclass(eeg_media)
-        try:
-            self._loader_logic.load_eeg_media_files(eeg_media._id)
-            if update_media_list:
-                self.data.eeg_media_list = [
-                    eeg_media if eeg_media._id == media._id else media for media in self.data.eeg_media_list
-                ]
-        except Exception:
-            self._current_eeg_media.set_dataclass(EEGMedia())
+        if update_media_list:
+            self.data.eeg_media_list = [
+                eeg_media if eeg_media._id == media._id else media for media in self.data.eeg_media_list
+            ]
 
     def _save_eeg_annotations(self) -> None:
         eeg_media = self._loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)

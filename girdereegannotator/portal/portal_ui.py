@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -7,7 +8,11 @@ from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMedia, EEGMediaFile, EEGMediaMetadata
+from girdereegannotator.database.models import (
+    EEGMedia,
+    EEGMediaFile,
+    EEGMediaMetadata,
+)
 
 
 @dataclass
@@ -15,6 +20,7 @@ class LoaderState:
     eeg_loading: bool = False
     eeg_file: EEGMediaFile = field(default_factory=EEGMediaFile)
     eeg_annotation_file: EEGMediaFile = field(default_factory=EEGMediaFile)
+    load_error: str | None = None
 
 
 @dataclass
@@ -36,7 +42,7 @@ class PortalUI:
         self.loader_state = TypedState(server.state, LoaderState)
 
     def _build_icon_button(self, icon: str, tooltip: str | None = None, **kwargs) -> None:
-        with v3.VBtn(**kwargs):
+        with v3.VBtn(icon=icon, **kwargs):
             if tooltip is not None:
                 v3.VTooltip(
                     text=tooltip,
@@ -51,46 +57,44 @@ class PortalUI:
         eeg_media = EEGMedia(**eeg_media_dict)
         self.eeg_media_selected(eeg_media)
 
-    def build_bar(self) -> None:
-        self._build_icon_button(
-            icon="mdi-content-save-outline",
-            click=self.save_annotations_clicked,
-            tooltip="Save annotations",
-            disabled=(f"!{self.portal_state.name.eeg_media.name}",),
-        )
-        v3.VSpacer()
-        self._build_icon_button(
-            icon="mdi-chevron-left",
-            click=self.previous_eeg_clicked,
-            tooltip="Previous EEG",
-        )
-        html.Div("{{ " + self.portal_state.name.eeg_media.name + " }}", classes="px-2")
-        self._build_icon_button(
-            icon="mdi-chevron-right",
-            click=self.next_eeg_clicked,
-            tooltip="Next EEG",
-        )
-        v3.VSpacer()
+    def build_bar(self, **kwargs) -> None:
+        with html.Div(classes="d-flex align-center", style="gap: 8px;", **kwargs):
+            self._build_icon_button(
+                icon="mdi-chevron-left",
+                click=self._trigger_select(self.previous_eeg_clicked),
+                tooltip="Previous EEG",
+            )
+            html.Div(
+                "{{ " + self.portal_state.name.eeg_media.name + " }}", v_if=(self.portal_state.name.eeg_media.name,)
+            )
+            html.Div("Select an EEG", v_else=True, classes="font-italic")
+            self._build_icon_button(
+                icon="mdi-chevron-right",
+                click=self._trigger_select(self.next_eeg_clicked),
+                tooltip="Next EEG",
+            )
+            v3.VSpacer()
+            self._build_icon_button(
+                icon="mdi-content-save-outline",
+                click=self.save_annotations_clicked,
+                tooltip="Save annotations",
+                disabled=(f"!{self.portal_state.name.eeg_media.name}",),
+            )
 
-    def build_drawer(self) -> None:
-        with (
-            v3.VList(),
+    def build_drawer(self, **kwargs) -> None:
+        with v3.VList(**kwargs):
             v3.VListItem(
                 v_for=f"eeg_media in {self.portal_state.name.eeg_media_list}",
                 active=(f"{self.portal_state.name.eeg_media._id} === eeg_media._id",),
                 value=("eeg_media",),
                 title=("eeg_media.name",),
-                # Make sure eeg viewer takes the focus after loading
-                click=(
-                    "trigger('"
-                    f"{self.server.controller.trigger_name(self._select_eeg_media)}"
-                    "', [eeg_media]).then(() => { trame.refs.eegview.$refs.rootElem.focus(); })"
-                ),
-            ),
-            v3.Template(v_slot_append="{ isActive }"),
-        ):
-            v3.VProgressCircular(
-                v_if=(f"isActive && {self.loader_state.name.eeg_loading}",),
-                indeterminate=True,
-                size=15,
+                click=self._trigger_select(self._select_eeg_media, "[eeg_media]"),
             )
+
+    def _trigger_select(self, select_callable: Callable, args: str | None = None) -> str:
+        """Trigger selection and make sure viewer takes the focus after loading"""
+        args = f", {args}" if args else ""
+        return (
+            f"trigger('{self.server.controller.trigger_name(select_callable)}'{args}"
+            ").then(() => { trame.refs.eegview.$refs.rootElem.focus(); })"
+        )
