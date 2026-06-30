@@ -34,7 +34,7 @@ class AnnotatorLayout(VAppLayout):
         self.state.trame__title = self.typed_state.data.app_name
 
         with self:
-            with v3.VAppBar(height=75) as self.app_bar:
+            with v3.VAppBar(border=True, flat=True, height=75) as self.app_bar:
                 v3.VAppBarNavIcon(
                     icon="mdi-menu",
                     click=f"{self.typed_state.name.is_drawer_open} = !{self.typed_state.name.is_drawer_open}",
@@ -43,7 +43,7 @@ class AnnotatorLayout(VAppLayout):
 
             self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open, width=350)
 
-            self.app_annotator = v3.VMain(classes="main-app d-flex flex-column")
+            self.app_annotator = v3.VMain(v_if=(self.typed_state.name.is_user_connected), classes="main-app")
 
             with v3.VFooter(app=True, classes="my-0 py-0", border=True) as self.footer:
                 v3.VProgressCircular(
@@ -92,8 +92,9 @@ class AnnotatorUI:
         with self.layout:
             client.Style(
                 "html { overflow-y: hidden; } "
-                ".main-app { height: 100vh; }"
-                ".main-view { display: flex; flex-direction: column; height: 100%; }"
+                ".main-app { height: 100vh; display: flex; flex-direction: column;}"
+                ".image-display-area { height: calc(100% - 2px); width: calc(100% - 2px) !important; padding: 2px; border: 2px solid white;}"
+                ".remote-controlled-area:focus .image-display-area { border: 2px dashed orange; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
                 ".v-main { max-height: 100%; }"
@@ -107,13 +108,10 @@ class AnnotatorUI:
                 self.portal_ui.build_drawer()
 
             with self.layout.app_annotator:
-                self.eeg_annotator_ui = EGGAnnotatorUI(
-                    loading=self.portal_ui.loader_state.name.eeg_loading, v_if=(self.typed_state.name.is_user_connected)
-                )
+                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=(self.portal_ui.loader_state.name.eeg_loaded,))
+                self.portal_ui.build_loader(v_else=True)
 
-                self.auth_ui.build_dialog(
-                    v_if=(f"!{self.typed_state.name.is_user_connected}",),
-                )
+            self.auth_ui.build_dialog(v_if=(f"!{self.typed_state.name.is_user_connected}",))
 
 
 class AnnotatorLogic:
@@ -124,7 +122,7 @@ class AnnotatorLogic:
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
 
         self._portal_logic = PortalLogic(self.server)
-        self._portal_logic.eeg_media_loaded.connect(self._on_eeg_files_loaded)
+        self._portal_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
 
         self._auth_logic = AuthLogic(server)
         self._auth_logic.user_connected.connect(self._on_user_connected)
@@ -137,7 +135,7 @@ class AnnotatorLogic:
         self.typed_state.data.is_drawer_open = is_connected
         self.typed_state.data.is_user_connected = is_connected
 
-    def _on_eeg_files_loaded(self, eeg_file_path: str) -> None:
+    def _on_eeg_media_downloaded(self, eeg_file_path: str) -> None:
         self._eeg_annotator_logic.set_file_path(eeg_file_path)
 
     def set_ui(self, ui: AnnotatorUI) -> None:

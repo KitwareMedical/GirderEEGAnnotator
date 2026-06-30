@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -17,6 +16,7 @@ from girdereegannotator.database.models import (
 
 @dataclass
 class LoaderState:
+    eeg_loaded: bool = False
     eeg_loading: bool = False
     eeg_file: EEGMediaFile = field(default_factory=EEGMediaFile)
     eeg_annotation_file: EEGMediaFile = field(default_factory=EEGMediaFile)
@@ -61,7 +61,7 @@ class PortalUI:
         with html.Div(classes="d-flex align-center", style="gap: 8px;", **kwargs):
             self._build_icon_button(
                 icon="mdi-chevron-left",
-                click=self._trigger_select(self.previous_eeg_clicked),
+                click=self.previous_eeg_clicked,
                 tooltip="Previous EEG",
             )
             html.Div(
@@ -70,7 +70,7 @@ class PortalUI:
             html.Div("Select an EEG", v_else=True, classes="font-italic")
             self._build_icon_button(
                 icon="mdi-chevron-right",
-                click=self._trigger_select(self.next_eeg_clicked),
+                click=self.next_eeg_clicked,
                 tooltip="Next EEG",
             )
             v3.VSpacer()
@@ -88,13 +88,14 @@ class PortalUI:
                 active=(f"{self.portal_state.name.eeg_media._id} === eeg_media._id",),
                 value=("eeg_media",),
                 title=("eeg_media.name",),
-                click=self._trigger_select(self._select_eeg_media, "[eeg_media]"),
+                click=(self._select_eeg_media, "[eeg_media]"),
             )
 
-    def _trigger_select(self, select_callable: Callable, args: str | None = None) -> str:
-        """Trigger selection and make sure viewer takes the focus after loading"""
-        args = f", {args}" if args else ""
-        return (
-            f"trigger('{self.server.controller.trigger_name(select_callable)}'{args}"
-            ").then(() => { trame.refs.eegview.$refs.rootElem.focus(); })"
-        )
+    def build_loader(self, **kwargs) -> None:
+        with html.Div(classes="d-flex flex-column justify-center align-center fill-height", **kwargs):
+            v3.VProgressCircular(v_if=(self.loader_state.name.eeg_loading,), indeterminate=True, size=100)
+            with html.Div(
+                v_if=(f"!{self.loader_state.name.eeg_loading} && {self.loader_state.name.load_error}",),
+            ):
+                v3.VIcon(color="warning", icon="mdi-alert-circle", size=100)
+                html.Span("{{ " + self.loader_state.name.load_error + " }}")

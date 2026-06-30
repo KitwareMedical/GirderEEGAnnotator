@@ -24,7 +24,7 @@ def are_eeg_files(files: list[EEGMediaFile]) -> bool:
 
 
 class PortalLogic:
-    eeg_media_loaded = Signal(str)
+    eeg_media_downloaded = Signal(str)
 
     def __init__(self, server: Server) -> None:
         self.server = server
@@ -32,7 +32,7 @@ class PortalLogic:
         self._current_eeg_media = self.typed_state.get_sub_state(self.typed_state.name.eeg_media)
 
         self._loader_logic = LoaderLogic(server)
-        self._loader_logic.eeg_media_loaded.connect(self.eeg_media_loaded)
+        self._loader_logic.eeg_media_downloaded.connect(self.eeg_media_downloaded)
 
     @property
     def name(self) -> PortalState:

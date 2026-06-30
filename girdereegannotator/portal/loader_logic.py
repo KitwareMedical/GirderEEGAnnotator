@@ -22,6 +22,10 @@ class FileValidationError(Exception):
     pass
 
 
+class AnnotatorLoadingError(Exception):
+    pass
+
+
 def are_eeg_files(files: list[EEGMediaFile]) -> bool:
     return len(files) <= 2 and any(file.name.endswith(EEG_FILE_EXTENSIONS) for file in files)
 
@@ -67,7 +71,7 @@ def create_async_task(
 
 
 class LoaderLogic:
-    eeg_media_loaded = Signal(str)
+    eeg_media_downloaded = Signal(str)
 
     def __init__(self, server: Server):
         self.server = server
@@ -126,7 +130,10 @@ class LoaderLogic:
 
         self._format_eeg_files(eeg_media_files)
 
-        self.eeg_media_loaded(self.data.eeg_file.path)
+        try:
+            self.eeg_media_downloaded(self.data.eeg_file.path)
+        except Exception as e:
+            raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
     def _reset_state(self) -> None:
         self.typed_state.set_dataclass(LoaderState())
@@ -135,11 +142,14 @@ class LoaderLogic:
         def _load() -> None:
             try:
                 self._load_eeg_media_files(eeg_media_id)
+                self.typed_state.data.eeg_loaded = True
 
-            except FileValidationError:
-                self._reset_state()
-                raise
+            except (FileValidationError, AnnotatorLoadingError) as e:
+                self.typed_state.data.load_error = str(e)
+                self.typed_state.data.eeg_loaded = False
+                raise e
 
+        self._reset_state()
         if self.task and not self.task.done():
             self.task.cancel()
         self.task = create_async_task(self.load_tracker, _load)
