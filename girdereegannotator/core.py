@@ -7,27 +7,38 @@ from trame.widgets import vuetify3 as v3
 from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 
+from .database.interface_database import (
+    DatabaseInterface,
+    register_interface,
+)
 from .eeg_annotator import EGGAnnotatorLogic, EGGAnnotatorUI
-from .file_browser import FileBrowserLogic, FileBrowserUI
+from .portal import PortalLogic, PortalUI
 
 
 @dataclass
-class AnnotatorState(VAppLayout):
-    page_name: str | None = None
+class AnnotatorState:
+    app_name: str = "GirderEGGAnnotator"
+    is_drawer_open: bool = True
 
 
 class AnnotatorLayout(VAppLayout):
     def __init__(
         self,
         server: Server,
-        app_name: str = "GirderEGGAnnotator",
         **kwargs,
     ):
         super().__init__(server, **kwargs)
-        self.state.trame__title = app_name
+        self.typed_state = TypedState(self.state, AnnotatorState)
+        self.state.trame__title = self.typed_state.data.app_name
 
         with self:
-            self.app_bar = v3.VAppBar(height=75)
+            with v3.VAppBar(height=75) as self.app_bar:
+                v3.VAppBarNavIcon(
+                    icon="mdi-menu",
+                    click=f"{self.typed_state.name.is_drawer_open} = !{self.typed_state.name.is_drawer_open}",
+                )
+
+            self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open)
 
             self.app_annotator = v3.VMain(classes="main-app d-flex flex-column")
 
@@ -63,27 +74,11 @@ class AnnotatorLayout(VAppLayout):
                 )
 
 
-class AnnotatorApp(TrameApp):
-    def __init__(self):
-        super().__init__()
-
-        self.typed_state = TypedState(self.state, AnnotatorState)
-
-        self._file_browser_logic = FileBrowserLogic(self.server)
-
-        self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
-        self._eeg_annotator_ui = EGGAnnotatorUI(self.server)
-
-        self._file_browser_logic.eeg_files_selected.connect(self._on_eeg_files_loaded)
-
-        self.layout = AnnotatorLayout(self.server)
+class AnnotatorUI:
+    def __init__(self, server: Server):
+        self.layout = AnnotatorLayout(server)
+        self.portal_ui = PortalUI(server)
         self._build_ui()
-
-        self.set_ui()
-
-    def _on_eeg_files_loaded(self, eeg_file_path: str) -> None:
-        self.typed_state.data.page_name = self._eeg_annotator_ui.template_name
-        self._eeg_annotator_logic.set_file_path(eeg_file_path)
 
     def _build_ui(self) -> None:
         with self.layout:
@@ -96,16 +91,45 @@ class AnnotatorApp(TrameApp):
                 ".v-main { max-height: 100%; }"
             )
             with self.layout.app_bar:
-                self._file_browser_ui = FileBrowserUI()
-                v3.VAppBarTitle(self.state.trame__title, style="flex: 0 1 auto;")
+                self.portal_ui.build_bar()
+
+            with self.layout.app_drawer:
+                self.portal_ui.build_drawer()
 
             with self.layout.app_annotator:
-                client.ServerTemplate(
-                    v_if=(self.typed_state.name.page_name,),
-                    classes="main-view",
-                    name=(self.typed_state.name.page_name,),
-                )
+                self.eeg_annotator_ui = EGGAnnotatorUI()
+
+
+class AnnotatorLogic:
+    def __init__(self, server: Server):
+        self.server = server
+        self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
+
+        self._portal_logic = PortalLogic(self.server)
+        self._portal_logic.eeg_media_loaded.connect(self._on_eeg_files_loaded)
+
+    def _on_eeg_files_loaded(self, eeg_file_path: str) -> None:
+        self._eeg_annotator_logic.set_file_path(eeg_file_path)
+
+    def set_ui(self, ui: AnnotatorUI) -> None:
+        self._eeg_annotator_logic.set_ui(ui.eeg_annotator_ui)
+        self._portal_logic.set_ui(ui.portal_ui)
+
+
+class AnnotatorApp(TrameApp):
+    def __init__(self, server: Server, interface: DatabaseInterface):
+        super().__init__(server)
+        self.register_interface(interface)
+
+        self._logic = AnnotatorLogic(self.server)
+        self._ui = AnnotatorUI(self.server)
+
+        self.set_ui()
 
     def set_ui(self) -> None:
-        self._eeg_annotator_logic.set_ui(self._eeg_annotator_ui)
-        self._file_browser_logic.set_ui(self._file_browser_ui)
+        self._logic.set_ui(self._ui)
+
+    def register_interface(self, interface: DatabaseInterface) -> None:
+        """Link all database APIs to controller"""
+        if interface is not None:
+            register_interface(interface, self.ctrl)
