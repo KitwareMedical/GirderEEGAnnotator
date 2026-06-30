@@ -4,8 +4,11 @@ from pathlib import Path
 from typing import TypeVar
 
 from attr import dataclass
+from girder_client import AuthenticationError as GirderAuthenticationError
 from girder_client import GirderClient
+from girder_client import HttpError as GirderHTTPError
 
+from .exceptions import AuthenticationError
 from .interface_database import DatabaseInterface
 from .models import (
     Collection,
@@ -79,7 +82,13 @@ class GirderDatabase(DatabaseInterface):
     def login(self, username: str, password: str) -> User:
         if self.authenticated:
             self.logout()
-        user = self.girder_client.authenticate(username, password)
+        try:
+            user = self.girder_client.authenticate(username, password)
+        except GirderAuthenticationError as e:
+            raise AuthenticationError("Wrong login or password") from e
+        except GirderHTTPError as e:
+            raise AuthenticationError("Unknown error") from e
+
         return self._user_as_dataclass(user)
 
     def list_collections(
