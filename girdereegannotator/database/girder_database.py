@@ -84,12 +84,17 @@ class GirderDatabase(DatabaseInterface):
             self.logout()
         try:
             user = self.girder_client.authenticate(username, password)
+            self.authenticated = True
         except GirderAuthenticationError as e:
             raise AuthenticationError("Wrong login or password") from e
         except GirderHTTPError as e:
             raise AuthenticationError("Unknown error") from e
 
         return self._user_as_dataclass(user)
+
+    def get_me(self) -> User | None:
+        user = self.girder_client.get(path=f"{self.resources.user}/me")
+        return self._user_as_dataclass(user) if user else None
 
     def list_collections(
         self,

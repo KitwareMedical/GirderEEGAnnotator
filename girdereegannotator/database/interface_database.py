@@ -3,16 +3,20 @@ from inspect import getmembers, isfunction
 
 from trame_server.controller import Controller
 
-from .models import Collection, EEGMedia, EEGMediaFile
+from .models import Collection, EEGMedia, EEGMediaFile, User
 
 
 class DatabaseInterface(ABC):
     @abstractmethod
-    def login(self, username: str, password: str) -> None:
+    def login(self, username: str, password: str) -> User:
         pass
 
     @abstractmethod
     def logout(self) -> None:
+        pass
+
+    @abstractmethod
+    def get_me(self) -> User | None:
         pass
 
     @abstractmethod

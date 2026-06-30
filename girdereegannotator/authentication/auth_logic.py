@@ -15,6 +15,8 @@ class AuthLogic:
         self.typed_state = TypedState(self.server.state, AuthState)
         self._current_user = self.typed_state.get_sub_state(self.name.current_user)
 
+        self.server.controller.on_server_ready.add(self._get_current_user)
+
     @property
     def name(self) -> AuthState:
         return self.typed_state.name
@@ -26,6 +28,12 @@ class AuthLogic:
     @property
     def ctrl(self) -> AuthState:
         return self.server.controller
+
+    def _get_current_user(self, **_kwargs) -> None:
+        user = self.ctrl.get_me()
+        if user is not None:
+            self._current_user.set_dataclass(user)
+            self.user_connected(True)
 
     def set_ui(self, ui: AuthUI) -> None:
         ui.login_clicked.connect(self._login)
@@ -47,5 +55,5 @@ class AuthLogic:
 
     def _logout(self) -> None:
         self._reset_state()
-        self.ctrl.logout()
         self.user_connected(False)
+        self.ctrl.logout()
