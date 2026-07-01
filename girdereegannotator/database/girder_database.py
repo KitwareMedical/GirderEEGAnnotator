@@ -4,8 +4,11 @@ from pathlib import Path
 from typing import TypeVar
 
 from attr import dataclass
+from girder_client import AuthenticationError as GirderAuthenticationError
 from girder_client import GirderClient
+from girder_client import HttpError as GirderHTTPError
 
+from .exceptions import AuthenticationError
 from .interface_database import DatabaseInterface
 from .models import (
     Collection,
@@ -69,11 +72,29 @@ class GirderDatabase(DatabaseInterface):
         return self._document_as_dataclass(user, User)
 
     def _update_media_metadata(self, eeg_media_id: str, eeg_media_metadata: EEGMediaMetadata) -> EEGMedia:
-        return self.girder_client.addMetadataToItem(eeg_media_id, eeg_media_metadata.as_dict())
+        media = self.girder_client.addMetadataToItem(eeg_media_id, eeg_media_metadata.as_dict())
+        return self._eeg_media_as_dataclass(media)
 
     def logout(self) -> None:
         self.girder_client.delete(f"{self.resources.user}/authentication")
         self.authenticated = False
+
+    def login(self, username: str, password: str) -> User:
+        if self.authenticated:
+            self.logout()
+        try:
+            user = self.girder_client.authenticate(username, password)
+            self.authenticated = True
+        except GirderAuthenticationError as e:
+            raise AuthenticationError("Wrong login or password") from e
+        except GirderHTTPError as e:
+            raise AuthenticationError("Unknown error") from e
+
+        return self._user_as_dataclass(user)
+
+    def get_me(self) -> User | None:
+        user = self.girder_client.get(path=f"{self.resources.user}/me")
+        return self._user_as_dataclass(user) if user else None
 
     def list_collections(
         self,
@@ -100,7 +121,7 @@ class GirderDatabase(DatabaseInterface):
     def list_eeg_media(
         self,
         sort: str = "created",
-        sort_dir: int = -1,
+        sort_dir: int = 1,
     ) -> list[EEGMedia]:
         params = {"text": "*.edf", "sort": sort, "sortdir": sort_dir, "offset": 0, "limit": None}
         media_items = self.girder_client.get(

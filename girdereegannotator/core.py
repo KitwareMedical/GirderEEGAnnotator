@@ -7,6 +7,7 @@ from trame.widgets import vuetify3 as v3
 from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 
+from .authentication import AuthLogic, AuthUI
 from .database.interface_database import (
     DatabaseInterface,
     register_interface,
@@ -18,7 +19,9 @@ from .portal import PortalLogic, PortalUI
 @dataclass
 class AnnotatorState:
     app_name: str = "GirderEGGAnnotator"
-    is_drawer_open: bool = True
+    is_drawer_open: bool = False
+    is_user_connected: bool = False
+    is_eeg_loaded: bool = False
 
 
 class AnnotatorLayout(VAppLayout):
@@ -32,15 +35,16 @@ class AnnotatorLayout(VAppLayout):
         self.state.trame__title = self.typed_state.data.app_name
 
         with self:
-            with v3.VAppBar(height=75) as self.app_bar:
+            with v3.VAppBar(border=True, flat=True, height=75) as self.app_bar:
                 v3.VAppBarNavIcon(
                     icon="mdi-menu",
                     click=f"{self.typed_state.name.is_drawer_open} = !{self.typed_state.name.is_drawer_open}",
                 )
+                v3.VAppBarTitle(text=self.typed_state.data.app_name)
 
-            self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open)
+            self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open, width=350)
 
-            self.app_annotator = v3.VMain(classes="main-app d-flex flex-column")
+            self.app_annotator = v3.VMain(v_if=(self.typed_state.name.is_user_connected), classes="main-app")
 
             with v3.VFooter(app=True, classes="my-0 py-0", border=True) as self.footer:
                 v3.VProgressCircular(
@@ -77,43 +81,76 @@ class AnnotatorLayout(VAppLayout):
 class AnnotatorUI:
     def __init__(self, server: Server):
         self.layout = AnnotatorLayout(server)
-        self.portal_ui = PortalUI(server)
+        self.portal_ui = PortalUI()
+        self.auth_ui = AuthUI()
         self._build_ui()
+
+    @property
+    def typed_state(self) -> TypedState[AnnotatorState]:
+        return self.layout.typed_state
 
     def _build_ui(self) -> None:
         with self.layout:
             client.Style(
                 "html { overflow-y: hidden; } "
-                ".main-app { height: 100vh; }"
-                ".main-view { display: flex; flex-direction: column; height: 100%; }"
+                ".main-app { height: 100vh; display: flex; flex-direction: column;}"
+                ".image-display-area { height: calc(100% - 2px); width: calc(100% - 2px) !important; padding: 2px; border: 2px solid white;}"
+                ".remote-controlled-area:focus .image-display-area { border: 2px dashed orange; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
                 ".v-main { max-height: 100%; }"
             )
             with self.layout.app_bar:
-                self.portal_ui.build_bar()
+                self.portal_ui.build_bar(v_if=(self.typed_state.name.is_user_connected))
+                v3.VSpacer()
+                self.auth_ui.build_user_profile(v_if=(self.typed_state.name.is_user_connected))
 
             with self.layout.app_drawer:
                 self.portal_ui.build_drawer()
 
             with self.layout.app_annotator:
-                self.eeg_annotator_ui = EGGAnnotatorUI()
+                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=(self.typed_state.name.is_eeg_loaded,))
+                self.portal_ui.build_loader(v_else=True)
+
+            self.auth_ui.build_dialog(v_if=(f"!{self.typed_state.name.is_user_connected}",))
 
 
 class AnnotatorLogic:
     def __init__(self, server: Server):
         self.server = server
+        self.typed_state = TypedState(server.state, AnnotatorState)
+
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
 
         self._portal_logic = PortalLogic(self.server)
-        self._portal_logic.eeg_media_loaded.connect(self._on_eeg_files_loaded)
+        self._portal_logic.eeg_media_selected.connect(self._on_eeg_media_selected)
+        self._portal_logic.loader_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
+        self._portal_logic.loader_logic.eeg_media_loaded.connect(self._on_eeg_media_loaded)
 
-    def _on_eeg_files_loaded(self, eeg_file_path: str) -> None:
+        self._auth_logic = AuthLogic(server)
+        self._auth_logic.user_connected.connect(self._on_user_connected)
+
+    def _on_user_connected(self, is_connected: bool) -> None:
+        if is_connected:
+            self._portal_logic.set_eeg_media_list()
+        else:
+            self._portal_logic.reset_state()
+        self.typed_state.data.is_drawer_open = is_connected
+        self.typed_state.data.is_user_connected = is_connected
+
+    def _on_eeg_media_selected(self) -> None:
+        self.typed_state.data.is_eeg_loaded = False
+
+    def _on_eeg_media_downloaded(self, eeg_file_path: str) -> None:
         self._eeg_annotator_logic.set_file_path(eeg_file_path)
+
+    def _on_eeg_media_loaded(self) -> None:
+        self.typed_state.data.is_eeg_loaded = True
 
     def set_ui(self, ui: AnnotatorUI) -> None:
         self._eeg_annotator_logic.set_ui(ui.eeg_annotator_ui)
         self._portal_logic.set_ui(ui.portal_ui)
+        self._auth_logic.set_ui(ui.auth_ui)
 
 
 class AnnotatorApp(TrameApp):

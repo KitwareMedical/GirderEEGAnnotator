@@ -1,4 +1,5 @@
 import tempfile
+from asyncio import Task
 from collections.abc import Callable
 from inspect import iscoroutinefunction
 from pathlib import Path
@@ -11,7 +12,7 @@ from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia, EEGMediaFile
 
-from .portal_ui import LoaderState
+from .loader_ui import LoaderState
 
 ANNOTATION_FILE_SUFFIX = "annotations.csv"
 EEG_FILE_EXTENSIONS = (".neonatal", ".edf")
@@ -58,7 +59,7 @@ def create_async_task(
     tracker: AsyncTracker,
     callable_method: Callable[..., None],
     *args,
-) -> None:
+) -> Task:
     async def async_task() -> None:
         async with tracker:
             if iscoroutinefunction(callable_method):
@@ -66,16 +67,18 @@ def create_async_task(
             else:
                 callable_method(*args)
 
-    create_task(async_task())
+    return create_task(async_task())
 
 
 class LoaderLogic:
-    eeg_media_loaded = Signal(str)
+    eeg_media_downloaded = Signal(str)
+    eeg_media_loaded = Signal()
 
     def __init__(self, server: Server):
         self.server = server
         self.typed_state = TypedState(self.server.state, LoaderState)
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
+        self.task: Task | None = None
 
         self.load_tracker = AsyncTracker(server, self.name.eeg_loading)
 
@@ -129,28 +132,27 @@ class LoaderLogic:
         self._format_eeg_files(eeg_media_files)
 
         try:
-            self.eeg_media_loaded(self.data.eeg_file.path)
+            self.eeg_media_downloaded(self.data.eeg_file.path)
         except Exception as e:
-            raise AnnotatorLoadingError(f"Could not load data into EEG Annotator: {e}") from e
+            raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
     def _reset_state(self) -> None:
-        self.data.eeg_file = None
-        self.data.eeg_annotation_file = None
+        self.typed_state.set_dataclass(LoaderState())
 
     def load_eeg_media_files(self, eeg_media_id: str) -> None:
         def _load() -> None:
             try:
                 self._load_eeg_media_files(eeg_media_id)
+                self.eeg_media_loaded()
 
-            except FileValidationError:
-                self._reset_state()
-                raise
+            except (FileValidationError, AnnotatorLoadingError) as e:
+                self.typed_state.data.load_error = str(e)
+                raise e
 
-            except AnnotatorLoadingError:
-                self._reset_state()
-                raise
-
-        create_async_task(self.load_tracker, _load)
+        self._reset_state()
+        if self.task and not self.task.done():
+            self.task.cancel()
+        self.task = create_async_task(self.load_tracker, _load)
 
     def save_eeg_annotations(self, eeg_media_id: str) -> EEGMedia:
         if self._current_tmpdir is None:
