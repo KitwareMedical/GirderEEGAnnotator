@@ -1,4 +1,4 @@
-from trame_server import Server
+from trame_server.core import Controller, Server
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
@@ -15,7 +15,7 @@ class AuthLogic:
         self.typed_state = TypedState(self.server.state, AuthState)
         self._current_user = self.typed_state.get_sub_state(self.name.current_user)
 
-        self.server.controller.on_server_ready.add(self._get_current_user)
+        self.server.controller.on_server_ready.add(self._set_current_user)
 
     @property
     def name(self) -> AuthState:
@@ -26,10 +26,10 @@ class AuthLogic:
         return self.typed_state.data
 
     @property
-    def ctrl(self) -> AuthState:
+    def ctrl(self) -> Controller:
         return self.server.controller
 
-    def _get_current_user(self, **_kwargs) -> None:
+    def _set_current_user(self, **_kwargs) -> None:
         user = self.ctrl.get_me()
         if user is not None:
             self._current_user.set_dataclass(user)

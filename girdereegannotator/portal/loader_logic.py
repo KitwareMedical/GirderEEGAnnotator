@@ -12,7 +12,7 @@ from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia, EEGMediaFile
 
-from .portal_ui import LoaderState
+from .loader_ui import LoaderState
 
 ANNOTATION_FILE_SUFFIX = "annotations.csv"
 EEG_FILE_EXTENSIONS = (".neonatal", ".edf")
@@ -72,6 +72,7 @@ def create_async_task(
 
 class LoaderLogic:
     eeg_media_downloaded = Signal(str)
+    eeg_media_loaded = Signal()
 
     def __init__(self, server: Server):
         self.server = server
@@ -142,11 +143,10 @@ class LoaderLogic:
         def _load() -> None:
             try:
                 self._load_eeg_media_files(eeg_media_id)
-                self.typed_state.data.eeg_loaded = True
+                self.eeg_media_loaded()
 
             except (FileValidationError, AnnotatorLoadingError) as e:
                 self.typed_state.data.load_error = str(e)
-                self.typed_state.data.eeg_loaded = False
                 raise e
 
         self._reset_state()

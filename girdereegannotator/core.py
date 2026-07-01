@@ -21,6 +21,7 @@ class AnnotatorState:
     app_name: str = "GirderEGGAnnotator"
     is_drawer_open: bool = False
     is_user_connected: bool = False
+    is_eeg_loaded: bool = False
 
 
 class AnnotatorLayout(VAppLayout):
@@ -80,8 +81,8 @@ class AnnotatorLayout(VAppLayout):
 class AnnotatorUI:
     def __init__(self, server: Server):
         self.layout = AnnotatorLayout(server)
-        self.portal_ui = PortalUI(server)
-        self.auth_ui = AuthUI(server)
+        self.portal_ui = PortalUI()
+        self.auth_ui = AuthUI()
         self._build_ui()
 
     @property
@@ -108,7 +109,7 @@ class AnnotatorUI:
                 self.portal_ui.build_drawer()
 
             with self.layout.app_annotator:
-                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=(self.portal_ui.loader_state.name.eeg_loaded,))
+                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=(self.typed_state.name.is_eeg_loaded,))
                 self.portal_ui.build_loader(v_else=True)
 
             self.auth_ui.build_dialog(v_if=(f"!{self.typed_state.name.is_user_connected}",))
@@ -122,7 +123,9 @@ class AnnotatorLogic:
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
 
         self._portal_logic = PortalLogic(self.server)
-        self._portal_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
+        self._portal_logic.eeg_media_selected.connect(self._on_eeg_media_selected)
+        self._portal_logic.loader_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
+        self._portal_logic.loader_logic.eeg_media_loaded.connect(self._on_eeg_media_loaded)
 
         self._auth_logic = AuthLogic(server)
         self._auth_logic.user_connected.connect(self._on_user_connected)
@@ -135,8 +138,14 @@ class AnnotatorLogic:
         self.typed_state.data.is_drawer_open = is_connected
         self.typed_state.data.is_user_connected = is_connected
 
+    def _on_eeg_media_selected(self) -> None:
+        self.typed_state.data.is_eeg_loaded = False
+
     def _on_eeg_media_downloaded(self, eeg_file_path: str) -> None:
         self._eeg_annotator_logic.set_file_path(eeg_file_path)
+
+    def _on_eeg_media_loaded(self) -> None:
+        self.typed_state.data.is_eeg_loaded = True
 
     def set_ui(self, ui: AnnotatorUI) -> None:
         self._eeg_annotator_logic.set_ui(ui.eeg_annotator_ui)

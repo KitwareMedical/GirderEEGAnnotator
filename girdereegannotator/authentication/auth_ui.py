@@ -1,7 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from trame.widgets import vuetify3 as v3
-from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
@@ -25,37 +25,19 @@ class AuthTextField(v3.VTextField):
         super().__init__(rules=(f"[ value => !!value ||  '{label} required' ]",), **kwargs)
 
 
-class AuthUI:
-    login_clicked = Signal(str, str)
-    logout_clicked = Signal(str, str)
+class AuthDialog(v3.VDialog):
+    def __init__(self, login_callable: Callable, **kwargs) -> None:
+        super().__init__(model_value=True, persistent=True, width=500, **kwargs)
+        self.typed_state = TypedState(self.state, AuthState)
 
-    def __init__(self, server: Server, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.server = server
-        self.typed_state = TypedState(server.state, AuthState)
-
-    def build_user_profile(self, **kwargs) -> None:
-        v3.VBtn(
-            "Logout",
-            click=self.logout_clicked,
-            color="error",
-            **kwargs,
-        )
-
-    def build_dialog(self, **kwargs) -> None:
         with (
-            v3.VDialog(
-                model_value=True,
-                persistent=True,
-                width=500,
-                **kwargs,
-            ),
+            self,
             v3.VForm(
                 v_slot="{ isValid }",
                 fast_fail=True,
                 submit_prevent=(
                     f"{self.typed_state.name.loading} = true; "
-                    f"trigger('{self.server.controller.trigger_name(self.login_clicked)}', "
+                    f"trigger('{self.ctrl.trigger_name(login_callable)}', "
                     f"[{self.typed_state.name.user_login}, {self.typed_state.name.user_password}])"
                     ".finally(() => {"
                     f"{self.typed_state.name.loading} = false;"
@@ -97,3 +79,22 @@ class AuthUI:
                     variant="tonal",
                     __properties=["type"],
                 )
+
+
+class AuthProfile(v3.VBtn):
+    def __init__(self, logout_callable: Callable, **kwargs):
+        super().__init__("Logout", click=logout_callable, color="error", **kwargs)
+
+
+class AuthUI:
+    login_clicked = Signal(str, str)
+    logout_clicked = Signal(str, str)
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    def build_user_profile(self, **kwargs) -> None:
+        AuthProfile(self.logout_clicked, **kwargs)
+
+    def build_dialog(self, **kwargs) -> None:
+        AuthDialog(self.login_clicked, **kwargs)

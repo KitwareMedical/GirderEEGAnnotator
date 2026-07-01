@@ -24,15 +24,14 @@ def are_eeg_files(files: list[EEGMediaFile]) -> bool:
 
 
 class PortalLogic:
-    eeg_media_downloaded = Signal(str)
+    eeg_media_selected = Signal()
 
     def __init__(self, server: Server) -> None:
         self.server = server
         self.typed_state = TypedState(self.server.state, PortalState)
         self._current_eeg_media = self.typed_state.get_sub_state(self.typed_state.name.eeg_media)
 
-        self._loader_logic = LoaderLogic(server)
-        self._loader_logic.eeg_media_downloaded.connect(self.eeg_media_downloaded)
+        self.loader_logic = LoaderLogic(server)
 
     @property
     def name(self) -> PortalState:
@@ -59,7 +58,7 @@ class PortalLogic:
 
     def _on_eeg_media_selected(self, eeg_media: EEGMedia) -> None:
         self._set_current_eeg_media(eeg_media)
-        self._loader_logic.load_eeg_media_files(eeg_media._id)
+        self.loader_logic.load_eeg_media_files(eeg_media._id)
 
     def _set_current_eeg_media(self, eeg_media: EEGMedia, update_media_list: bool = False) -> None:
         self._current_eeg_media.set_dataclass(eeg_media)
@@ -67,9 +66,10 @@ class PortalLogic:
             self.data.eeg_media_list = [
                 eeg_media if eeg_media._id == media._id else media for media in self.data.eeg_media_list
             ]
+        self.eeg_media_selected()
 
     def _save_eeg_annotations(self) -> None:
-        eeg_media = self._loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)
+        eeg_media = self.loader_logic.save_eeg_annotations(self._current_eeg_media.data._id)
         self._set_current_eeg_media(eeg_media, update_media_list=True)
 
     def _select_next_media(self) -> None:
