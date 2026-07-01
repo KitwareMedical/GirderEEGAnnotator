@@ -11,6 +11,7 @@ from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia, EEGMediaFile
+from girdereegannotator.eeg_annotator.eeg_annotator_window import EEGAnnotatorError
 
 from .loader_ui import LoaderState
 
@@ -19,10 +20,6 @@ EEG_FILE_EXTENSIONS = (".neonatal", ".edf")
 
 
 class FileValidationError(Exception):
-    pass
-
-
-class AnnotatorLoadingError(Exception):
     pass
 
 
@@ -131,10 +128,7 @@ class LoaderLogic:
 
         self._format_eeg_files(eeg_media_files)
 
-        try:
-            self.eeg_media_downloaded(self.data.eeg_file.path)
-        except Exception as e:
-            raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
+        self.eeg_media_downloaded(self.data.eeg_file.path)
 
     def _reset_state(self) -> None:
         self.typed_state.set_dataclass(LoaderState())
@@ -145,7 +139,7 @@ class LoaderLogic:
                 self._load_eeg_media_files(eeg_media_id)
                 self.eeg_media_loaded()
 
-            except (FileValidationError, AnnotatorLoadingError) as e:
+            except (FileValidationError, EEGAnnotatorError) as e:
                 self.typed_state.data.load_error = str(e)
                 raise e
 

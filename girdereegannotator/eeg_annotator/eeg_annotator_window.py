@@ -1,71 +1,86 @@
-from pathlib import Path
+from multiprocessing import Pipe, Process
 from typing import Any
 
-import libeegviz
-import numpy as np
-from PIL import Image
+from .eeg_annotator_worker import worker_main
+
+
+class EEGAnnotatorError(Exception):
+    pass
 
 
 class EGGAnnotatorWindow:
-    def __init__(self):
-        self._context = None
-        self._events = ["MouseMove", "LeftButtonPress", "RightButtonPress", "KeyDown"]
-        self._cols, self._rows = 0, 0
+    def __init__(self) -> None:
+        self._events = [
+            "MouseMove",
+            "LeftButtonPress",
+            "RightButtonPress",
+            "KeyDown",
+        ]
+
+        self._cols = 0
+        self._rows = 0
         self.window_size = {"w": 0, "h": 0}
 
+        self._worker_started = False
+
+    def __del__(self) -> None:
+        self._stop_worker()
+
+    def _start_worker(self) -> None:
+        self._parent_conn, child_conn = Pipe()
+
+        self._process = Process(
+            target=worker_main,
+            args=(child_conn,),
+            daemon=True,
+        )
+
+        self._process.start()
+        self._worker_started = True
+
+    def _stop_worker(self) -> None:
+        if self._process.is_alive():
+            self._parent_conn.send(("quit", None))
+            self._process.join()
+            self._worker_started = False
+
+    def _restart_worker(self) -> None:
+        if self._worker_started:
+            self._stop_worker()
+        self._start_worker()
+
     def set_file_path(self, file_path: str) -> None:
-        if not Path(file_path).exists():
-            raise Exception("Path does not exist")
-        self._context = libeegviz.create(file_path)
+        self._restart_worker()
+        self._parent_conn.send(("open", file_path))
+        status = self._parent_conn.recv()
+
+        if status[0] == "error":
+            _, msg = status
+            raise EEGAnnotatorError(f"Could not load file into annotator: {msg}")
 
     def _move(self, x: float, y: float) -> None:
-        if self._context is None:
-            return
-        libeegviz.move(self._context, x, y)
+        self._parent_conn.send(("move", (x, y)))
 
     def _click(self, button: str) -> None:
-        if self._context is None:
-            return
-        libeegviz.click(self._context, button)
+        self._parent_conn.send(("click", button))
 
     def _keydown(self, key: str) -> None:
-        if self._context is None:
-            return
-        libeegviz.key(self._context, key)
+        self._parent_conn.send(("keydown", key))
 
-    def _is_point_in_window(self, x: float, y: float) -> None:
+    def _is_point_in_window(self, x: float, y: float) -> bool:
         return 0 <= x <= self._cols and 0 <= y <= self._rows
-
-    def rgba_to_rgb(self, rgba_image_array: Any) -> None:
-        """Convert an RGBA image array to an RGB image array by alpha blending over a white background."""
-        rgba_image_array = rgba_image_array.astype(np.float32) / 255.0
-        rgb_array = rgba_image_array[..., :3]
-        alpha_array = rgba_image_array[..., 3:]
-        bg = np.array([1.0, 1.0, 1.0], dtype=np.float32)
-        out_rgb = alpha_array * rgb_array + (1 - alpha_array) * bg  # blending
-        return (out_rgb * 255).astype(np.uint8)
 
     @property
     def img_cols_rows(self) -> tuple[Any, int, int]:
-        if self._context is None:
-            return (None, 0, 0)
-        byte_image, self._cols, self._rows, _ = libeegviz.update(self._context)
-        image = Image.frombytes(mode="RGBA", size=(self._cols, self._rows), data=byte_image)
-        np_image = np.asarray(image)
-        np_image = self.rgba_to_rgb(np_image)
-        return (
-            np_image,
-            self._cols,
-            self._rows,
-        )
+        self._parent_conn.send(("frame", None))
+
+        return self._parent_conn.recv()
 
     def process_resize_event(self, width: int, height: int) -> None:
         self.window_size = {"w": width, "h": height}
-        if self._context is None:
-            return
-        libeegviz.resize(self._context, width, height)
+        self._parent_conn.send(("resize", (width, height)))
 
-    def process_interaction_event(self, event: Any) -> None:
+    def process_interaction_event(self, event: Any) -> bool:
         event_type = event["type"]
 
         if event_type not in self._events:
