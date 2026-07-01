@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-07-01)
+
+### Bug Fixes
+
+- **focus**: Focus rca on hover and do not show rca if load failed
+  ([`1a3b8a2`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/1a3b8a235109f4cbb0661040fbb25fdff4cd0d2b))
+
+### Chores
+
+- Take reviews into account
+  ([`cde2d40`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/cde2d40269f65dca7fe58082cce8475f6a2d164b))
+
+### Features
+
+- **api key**: Enable authentication with api key
+  ([`5e99501`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5e99501066256305258e226c577fe8bcad77871d))
+
+- **auth errors**: Handle authentication errors
+  ([`5cda47e`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5cda47ea1f7c52f7432015216590103111057c8e))
+
+- **authentication**: Add user login and logout
+  ([`0470eea`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/0470eeaba47fe0b4eda73d6baf4f47294a94560b))
+
+
 ## v1.1.0 (2026-06-30)
 
 ### Bug Fixes
