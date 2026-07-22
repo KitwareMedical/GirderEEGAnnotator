@@ -2,6 +2,19 @@ from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 GirderModel = dict[str, Any]
+GirderParams = dict[str, Any]
+
+
+@dataclass
+class BIDSSuffix:
+    eeg: str = "eeg"
+    annotation: str = "events"
+
+
+@dataclass
+class BIDSExtension:
+    eeg: str = ".edf"
+    annotation: str = ".csv"
 
 
 @dataclass
@@ -20,26 +33,36 @@ class Model:
 
 
 @dataclass
-class Collection(Model):
-    _id: str
-    name: str
-    meta: dict[str, Any]
-
-
-@dataclass
-class EEGMediaMetadata(Model):
-    annotation_id: str | None = None
-
-
-@dataclass
-class EEGMedia(Model):
+class BIDSDataset(Model):
     _id: str | None = None
     name: str | None = None
-    meta: EEGMediaMetadata = field(default_factory=EEGMediaMetadata)
+    dataset_description: dict[str, str] = field(default_factory=dict)
+    derivative_dataset_id: str | None = None
 
 
 @dataclass
 class EEGMediaFile(Model):
+    _id: str | None = None
+    name: str | None = None
+
+
+@dataclass
+class AnnotationFile(EEGMediaFile):
+    annotator_id: str | None = None
+
+
+@dataclass
+class EEGMedia:
+    name: str | None = None
+    raw_eeg: EEGMediaFile = field(default_factory=EEGMediaFile)
+    eeg: EEGMediaFile = field(default_factory=EEGMediaFile)
+    annotations: list[AnnotationFile] = field(default_factory=list)
+    upload_dataset_id: str | None = None
+    upload_folder_id: str | None = None
+
+
+@dataclass
+class Asset:
     name: str | None = None
     path: str | None = None
 

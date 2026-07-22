@@ -15,6 +15,6 @@ class EGGAnnotatorLogic:
     def set_ui(self, ui: EGGAnnotatorUI) -> None:
         self.view_handler = ui.rca.create_view_handler(self.eeg_window)
 
-    def set_file_path(self, file_path: str) -> None:
-        self.eeg_window.set_file_path(file_path)
+    def set_files(self, file_path: str, annotation_file_path: str) -> None:
+        self.eeg_window.set_files(file_path, annotation_file_path)
         self.view_handler.update_size(None, self.eeg_window.window_size)

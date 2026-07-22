@@ -13,10 +13,11 @@ class EGGAnnotatorWindow:
         self._cols, self._rows = 0, 0
         self.window_size = {"w": 0, "h": 0}
 
-    def set_file_path(self, file_path: str) -> None:
+    def set_files(self, file_path: str, annotation_file_path: str) -> None:
         if not Path(file_path).exists():
-            raise Exception("Path does not exist")
-        self._context = libeegviz.create(file_path)
+            raise Exception(f"{file_path} does not exist")
+
+        self._context = libeegviz.create2(file_path, annotation_file_path)
 
     def _move(self, x: float, y: float) -> None:
         if self._context is None:

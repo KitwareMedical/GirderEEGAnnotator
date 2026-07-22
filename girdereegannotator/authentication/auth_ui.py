@@ -49,7 +49,7 @@ class AuthDialog(v3.VDialog):
         ):
             with v3.VCardText(classes="pb-0"):
                 v3.VAlert(
-                    v_if=(f"{self.typed_state.name.error} && !{self.typed_state.name.loading}",),
+                    v_if=f"{self.typed_state.name.error} && !{self.typed_state.name.loading}",
                     closable=True,
                     text=(self.typed_state.name.error,),
                     type="error",

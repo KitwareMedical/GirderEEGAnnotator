@@ -44,7 +44,7 @@ class AnnotatorLayout(VAppLayout):
 
             self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open, width=350)
 
-            self.app_annotator = v3.VMain(v_if=(self.typed_state.name.is_user_connected), classes="main-app")
+            self.app_annotator = v3.VMain(v_if=self.typed_state.name.is_user_connected, classes="main-app")
 
             with v3.VFooter(app=True, classes="my-0 py-0", border=True) as self.footer:
                 v3.VProgressCircular(
@@ -101,18 +101,18 @@ class AnnotatorUI:
                 ".v-main { max-height: 100%; }"
             )
             with self.layout.app_bar:
-                self.portal_ui.build_bar(v_if=(self.typed_state.name.is_user_connected))
+                self.portal_ui.build_bar(v_if=self.typed_state.name.is_user_connected)
                 v3.VSpacer()
-                self.auth_ui.build_user_profile(v_if=(self.typed_state.name.is_user_connected))
+                self.auth_ui.build_user_profile(v_if=self.typed_state.name.is_user_connected)
 
             with self.layout.app_drawer:
                 self.portal_ui.build_drawer()
 
             with self.layout.app_annotator:
-                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=(self.typed_state.name.is_eeg_loaded,))
+                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=self.typed_state.name.is_eeg_loaded)
                 self.portal_ui.build_loader(v_else=True)
 
-            self.auth_ui.build_dialog(v_if=(f"!{self.typed_state.name.is_user_connected}",))
+            self.auth_ui.build_dialog(v_if=f"!{self.typed_state.name.is_user_connected}")
 
 
 class AnnotatorLogic:
@@ -123,7 +123,7 @@ class AnnotatorLogic:
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
 
         self._portal_logic = PortalLogic(self.server)
-        self._portal_logic.eeg_media_selected.connect(self._on_eeg_media_selected)
+        self._portal_logic.eeg_media_updated.connect(self._on_eeg_media_updated)
         self._portal_logic.loader_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
         self._portal_logic.loader_logic.eeg_media_loaded.connect(self._on_eeg_media_loaded)
 
@@ -131,18 +131,17 @@ class AnnotatorLogic:
         self._auth_logic.user_connected.connect(self._on_user_connected)
 
     def _on_user_connected(self, is_connected: bool) -> None:
+        self._portal_logic.reset_state()
         if is_connected:
-            self._portal_logic.set_eeg_media_list()
-        else:
-            self._portal_logic.reset_state()
+            self._portal_logic.set_eeg_dataset_list()
         self.typed_state.data.is_drawer_open = is_connected
         self.typed_state.data.is_user_connected = is_connected
 
-    def _on_eeg_media_selected(self) -> None:
+    def _on_eeg_media_updated(self) -> None:
         self.typed_state.data.is_eeg_loaded = False
 
-    def _on_eeg_media_downloaded(self, eeg_file_path: str) -> None:
-        self._eeg_annotator_logic.set_file_path(eeg_file_path)
+    def _on_eeg_media_downloaded(self, eeg_file_path: str, annotation_file_path: str) -> None:
+        self._eeg_annotator_logic.set_files(eeg_file_path, annotation_file_path)
 
     def _on_eeg_media_loaded(self) -> None:
         self.typed_state.data.is_eeg_loaded = True
