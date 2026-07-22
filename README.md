@@ -55,6 +55,34 @@ pip install ".[turbo]"
 
 ## Run trame application
 
+### Configuration file
+
+Copy the [config.template.yaml](./config.template.yaml) file to a config.yaml
+file that will be read by the app and fill in the configuration. This
+configuration file holds the style of the application and the configuration of
+the Girder backend. This application expects Girder running with the GirderBIDS
+plugin available [here](https://github.com/KitwareMedical/GirderBIDS)
+
+```
+# Clone the library
+cd ..
+git clone https://github.com/KitwareMedical/GirderBIDS.git
+cd GirderBIDS
+```
+
+Then, you can follow the plugin instructions to run your Girder backend.
+
+Then you can fill in the configuration file:
+
+```
+backend:
+    type: girder
+    api_url: the api URL of your girder. For instance : http://localhost:8080/api/v1
+    api_key: the API key of a girder user (optional, for dev purposes)
+```
+
+### Run the EEGAnnotator
+
 ```
 girdereegannotator
 ```
