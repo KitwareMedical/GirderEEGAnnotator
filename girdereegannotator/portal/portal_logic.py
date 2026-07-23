@@ -1,32 +1,23 @@
 from trame_server import Server
-from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia
+from girdereegannotator.utils.base_logic import BaseLogic
 
 from .portal_ui import PortalState
 
 
-class PortalLogic:
+class PortalLogic(BaseLogic[PortalState]):
     eeg_media_selected = Signal(EEGMedia | None)
 
     def __init__(self, server: Server) -> None:
-        self.server = server
-        self.typed_state = TypedState(self.server.state, PortalState)
-        self.typed_state.bind_changes(
+        super().__init__(server, PortalState)
+        self.bind_changes(
             {
                 self.typed_state.name.eeg_media_index: self._select_eeg_media,
                 self.typed_state.name.dataset_index: self._select_dataset,
             }
         )
-
-    @property
-    def name(self) -> PortalState:
-        return self.typed_state.name
-
-    @property
-    def data(self) -> PortalState:
-        return self.typed_state.data
 
     def _refresh_dataset_list(self) -> None:
         self.data.dataset_list = self.server.controller.list_datasets()
@@ -48,7 +39,7 @@ class PortalLogic:
         self.eeg_media_selected(self.data.eeg_media_list[eeg_media_index] if eeg_media_index is not None else None)
 
     def reset_state(self) -> None:
-        self.typed_state.set_dataclass(PortalState())
+        super().reset_state()
         self._refresh_dataset_list()
 
     def _shift_eeg_media_index(self, offset: int) -> None:

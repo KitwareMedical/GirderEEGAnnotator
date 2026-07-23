@@ -7,7 +7,8 @@ from typing import Any
 
 from girder_client import GirderClient
 
-from ..eeg_utils import filter_eeg
+from girdereegannotator.utils.eeg import filter_eeg
+
 from ..models import (
     AnnotationFile,
     Asset,
