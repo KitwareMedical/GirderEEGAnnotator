@@ -32,32 +32,26 @@ class ShortcutInfo(Div):
     def __init__(self, icons: list[str], desc: str, **kwargs) -> None:
         super().__init__(classes="d-flex justify-space-between pa-2", **kwargs)
         with self:
+            Span(desc, classes="text-body-2")
             with Div(classes="d-flex", style="gap: 8px;"):
                 for icon in icons:
                     v3.VIcon(icon=f"mdi-{icon}")
-            Span(desc, classes="text-body-2")
 
 
-class ShortcutsPanel(Div):
+class ShortcutsPanel(v3.VDialog):
     def __init__(self, **kwargs) -> None:
-        super().__init__(
-            classes="d-flex justify-end align-end ma-7",
-            style="inset: 0; position: absolute; pointer-events: none;",
-            **kwargs,
-        )
+        super().__init__(width=400, **kwargs)
 
         self._build_ui()
 
     def _build_ui(self) -> None:
-        with self, v3.VDialog(width=400):
+        with self:
             with (
                 v3.Template(v_slot_activator="{ props : activatorProps }"),
                 v3.VBtn(
                     v_bind="activatorProps",
-                    icon="mdi-plus",
-                    raw_attrs=['tabindex="-1"'],
-                    color="white",
-                    style="pointer-events: visible;",
+                    icon=True,
+                    variant="text",
                 ),
             ):
                 v3.VTooltip(
@@ -66,7 +60,7 @@ class ShortcutsPanel(Div):
                     open_delay=500,
                     text="Keyboard shortcuts",
                 )
-                v3.VIcon(icon="mdi-information-outline")
+                v3.VIcon(icon="mdi-help-circle-outline")
 
             with v3.VCard(), v3.VCardText():
                 for shortcut_theme, shortcuts in SHORTCUTS.items():

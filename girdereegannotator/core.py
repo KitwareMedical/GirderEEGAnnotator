@@ -17,21 +17,20 @@ from .portal import PortalLogic, PortalUI
 
 
 @dataclass
-class AnnotatorState:
+class AnnotatorAppState:
     app_name: str = "GirderEGGAnnotator"
     is_drawer_open: bool = False
-    is_user_connected: bool = False
-    is_eeg_loaded: bool = False
+    is_viewer_disabled: bool = False
 
 
-class AnnotatorLayout(VAppLayout):
+class AnnotatorAppLayout(VAppLayout):
     def __init__(
         self,
         server: Server,
         **kwargs,
     ):
         super().__init__(server, **kwargs)
-        self.typed_state = TypedState(self.state, AnnotatorState)
+        self.typed_state = TypedState(self.state, AnnotatorAppState)
         self.state.trame__title = self.typed_state.data.app_name
 
         with self:
@@ -44,109 +43,62 @@ class AnnotatorLayout(VAppLayout):
 
             self.app_drawer = v3.VNavigationDrawer(v_model=self.typed_state.name.is_drawer_open, width=350)
 
-            self.app_annotator = v3.VMain(v_if=self.typed_state.name.is_user_connected, classes="main-app")
-
-            with v3.VFooter(app=True, classes="my-0 py-0", border=True) as self.footer:
-                v3.VProgressCircular(
-                    indeterminate=("!!trame__busy",),
-                    color="#04a94d",
-                    size=16,
-                    width=3,
-                    classes="ml-n3 mr-1",
-                )
-                self.footer.add_child(
-                    '<a href="https://kitware.github.io/trame/" '
-                    'class="text-grey-lighten-1 text-caption text-decoration-none" '
-                    'target="_blank">Powered by trame</a>'
-                )
-                v3.VSpacer()
-                reload = self.server.controller.on_server_reload
-                if reload.exists():
-                    v3.VBtn(
-                        size="x-small",
-                        density="compact",
-                        icon="mdi-autorenew",
-                        elevation=0,
-                        click=self.on_server_reload,
-                        classes="mx-2",
-                    )
-
-                self.footer.add_child(
-                    '<a href="https://www.kitware.com/" '
-                    'class="text-grey-lighten-1 text-caption text-decoration-none" '
-                    'target="_blank">© 2025 Kitware Inc.</a>'
-                )
+            self.app_annotator = v3.VMain(classes="main-app")
 
 
-class AnnotatorUI:
+class AnnotatorAppUI:
     def __init__(self, server: Server):
-        self.layout = AnnotatorLayout(server)
-        self.portal_ui = PortalUI()
+        self.layout = AnnotatorAppLayout(server)
 
-        self._build_ui()
-
-    @property
-    def typed_state(self) -> TypedState[AnnotatorState]:
-        return self.layout.typed_state
-
-    def _build_ui(self) -> None:
         with self.layout:
             client.Style(
                 "html { overflow-y: hidden; } "
                 ".main-app { height: 100vh; display: flex; flex-direction: column;}"
-                ".image-display-area { height: calc(100% - 2px); width: calc(100% - 2px) !important; padding: 2px; border: 2px solid white;}"
+                ".display-area { padding-top: 2px; }"
+                ".image-display-area { height: calc(100% - 2px); padding: 2px; border: 2px solid white;}"
                 ".remote-controlled-area:focus .image-display-area { border: 2px dashed orange; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
                 ".v-main { max-height: 100%; }"
             )
             with self.layout.app_bar:
-                self.portal_ui.build_bar(v_if=self.typed_state.name.is_user_connected)
-                v3.VSpacer()
                 self.auth_ui = AuthenticationUI()
 
             with self.layout.app_drawer:
-                self.portal_ui.build_drawer()
+                self.portal_ui = PortalUI()
 
             with self.layout.app_annotator:
-                self.eeg_annotator_ui = EGGAnnotatorUI(v_if=self.typed_state.name.is_eeg_loaded)
-                self.portal_ui.build_loader(v_else=True)
+                self.eeg_annotator_ui = EGGAnnotatorUI()
+
+    @property
+    def typed_state(self) -> TypedState[AnnotatorAppState]:
+        return self.layout.typed_state
 
 
-class AnnotatorLogic:
+class AnnotatorAppLogic:
     def __init__(self, server: Server):
         self.server = server
-        self.typed_state = TypedState(server.state, AnnotatorState)
+        self.typed_state = TypedState(server.state, AnnotatorAppState)
 
         self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
-
         self._portal_logic = PortalLogic(self.server)
-        self._portal_logic.eeg_media_updated.connect(self._on_eeg_media_updated)
-        self._portal_logic.loader_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
-        self._portal_logic.loader_logic.eeg_media_loaded.connect(self._on_eeg_media_loaded)
-
         self._auth_logic = AuthenticationLogic(server)
+
+        self._eeg_annotator_logic.next_clicked.connect(self._portal_logic.select_next_eeg)
+        self._eeg_annotator_logic.previous_clicked.connect(self._portal_logic.select_previous_eeg)
+        self._eeg_annotator_logic.eeg_media_updated.connect(self._portal_logic.update_eeg_media_list)
+
+        self._portal_logic.eeg_media_selected.connect(self._eeg_annotator_logic.load_eeg_media)
+
         self._auth_logic.user_connected.connect(self._on_user_connected)
 
     def _on_user_connected(self, is_connected: bool) -> None:
         self._portal_logic.reset_state()
-        if is_connected:
-            self._portal_logic.set_eeg_dataset_list()
+        self._eeg_annotator_logic.reset_state()
         self.typed_state.data.is_drawer_open = is_connected
-        self.typed_state.data.is_user_connected = is_connected
 
-    def _on_eeg_media_updated(self) -> None:
-        self.typed_state.data.is_eeg_loaded = False
-
-    def _on_eeg_media_downloaded(self, eeg_file_path: str, annotation_file_path: str) -> None:
-        self._eeg_annotator_logic.set_files(eeg_file_path, annotation_file_path)
-
-    def _on_eeg_media_loaded(self) -> None:
-        self.typed_state.data.is_eeg_loaded = True
-
-    def set_ui(self, ui: AnnotatorUI) -> None:
+    def set_ui(self, ui: AnnotatorAppUI) -> None:
         self._eeg_annotator_logic.set_ui(ui.eeg_annotator_ui)
-        self._portal_logic.set_ui(ui.portal_ui)
         self._auth_logic.set_ui(ui.auth_ui)
 
 
@@ -155,8 +107,8 @@ class AnnotatorApp(TrameApp):
         super().__init__(server)
         self.register_interface(interface)
 
-        self._logic = AnnotatorLogic(self.server)
-        self._ui = AnnotatorUI(self.server)
+        self._logic = AnnotatorAppLogic(self.server)
+        self._ui = AnnotatorAppUI(self.server)
 
         self.set_ui()
 
