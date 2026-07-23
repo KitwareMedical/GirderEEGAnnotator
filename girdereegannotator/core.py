@@ -7,7 +7,7 @@ from trame.widgets import vuetify3 as v3
 from trame_server.core import Server
 from trame_server.utils.typed_state import TypedState
 
-from .authentication import AuthLogic, AuthUI
+from .authentication import AuthenticationLogic, AuthenticationUI
 from .database.interface_database import (
     DatabaseInterface,
     register_interface,
@@ -82,7 +82,7 @@ class AnnotatorUI:
     def __init__(self, server: Server):
         self.layout = AnnotatorLayout(server)
         self.portal_ui = PortalUI()
-        self.auth_ui = AuthUI()
+
         self._build_ui()
 
     @property
@@ -103,7 +103,7 @@ class AnnotatorUI:
             with self.layout.app_bar:
                 self.portal_ui.build_bar(v_if=self.typed_state.name.is_user_connected)
                 v3.VSpacer()
-                self.auth_ui.build_user_profile(v_if=self.typed_state.name.is_user_connected)
+                self.auth_ui = AuthenticationUI()
 
             with self.layout.app_drawer:
                 self.portal_ui.build_drawer()
@@ -111,8 +111,6 @@ class AnnotatorUI:
             with self.layout.app_annotator:
                 self.eeg_annotator_ui = EGGAnnotatorUI(v_if=self.typed_state.name.is_eeg_loaded)
                 self.portal_ui.build_loader(v_else=True)
-
-            self.auth_ui.build_dialog(v_if=f"!{self.typed_state.name.is_user_connected}")
 
 
 class AnnotatorLogic:
@@ -127,7 +125,7 @@ class AnnotatorLogic:
         self._portal_logic.loader_logic.eeg_media_downloaded.connect(self._on_eeg_media_downloaded)
         self._portal_logic.loader_logic.eeg_media_loaded.connect(self._on_eeg_media_loaded)
 
-        self._auth_logic = AuthLogic(server)
+        self._auth_logic = AuthenticationLogic(server)
         self._auth_logic.user_connected.connect(self._on_user_connected)
 
     def _on_user_connected(self, is_connected: bool) -> None:

@@ -4,25 +4,25 @@ from undo_stack import Signal
 
 from girdereegannotator.database.exceptions import AuthenticationError
 
-from .auth_ui import AuthState, AuthUI
+from .authentication_ui import AuthenticationState, AuthenticationUI
 
 
-class AuthLogic:
+class AuthenticationLogic:
     user_connected = Signal(bool)
 
     def __init__(self, server: Server):
         self.server = server
-        self.typed_state = TypedState(self.server.state, AuthState)
-        self._current_user = self.typed_state.get_sub_state(self.name.current_user)
+        self.typed_state = TypedState(self.server.state, AuthenticationState)
+        self._current_user = self.typed_state.get_sub_state(self.name.user_state)
 
         self.server.controller.on_client_connected.add(self._set_current_user)
 
     @property
-    def name(self) -> AuthState:
+    def name(self) -> AuthenticationState:
         return self.typed_state.name
 
     @property
-    def data(self) -> AuthState:
+    def data(self) -> AuthenticationState:
         return self.typed_state.data
 
     @property
@@ -30,18 +30,19 @@ class AuthLogic:
         return self.server.controller
 
     def _set_current_user(self, **_kwargs) -> None:
-        user = self.ctrl.get_me()
-        if user is not None:
-            self._current_user.set_dataclass(user)
-            self.user_connected(True)
-        self.server.state.flush()
+        if self._current_user.data._id is None:
+            user = self.ctrl.get_me()
+            if user is not None:
+                self._current_user.set_dataclass(user)
+                self.user_connected(True)
+            self.server.state.flush()
 
-    def set_ui(self, ui: AuthUI) -> None:
-        ui.login_clicked.connect(self._login)
-        ui.logout_clicked.connect(self._logout)
+    def set_ui(self, ui: AuthenticationUI) -> None:
+        ui.auth_dialog.login_clicked.connect(self._login)
+        ui.auth_menu.logout_clicked.connect(self._logout)
 
     def _reset_state(self) -> None:
-        self.typed_state.set_dataclass(AuthState())
+        self.typed_state.set_dataclass(AuthenticationState())
 
     def _login(self, username: str, password: str) -> None:
         try:
@@ -51,8 +52,8 @@ class AuthLogic:
             self.user_connected(True)
 
         except AuthenticationError as e:
-            self.data.error = str(e)
-            self.data.user_password = None
+            self.data.login_state.error = str(e)
+            self.data.login_state.user_password = None
 
     def _logout(self) -> None:
         self._reset_state()
