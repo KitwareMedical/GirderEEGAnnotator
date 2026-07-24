@@ -1,3 +1,5 @@
+from typing import Any
+
 from trame.app import TrameApp
 from trame_server.core import Server
 
@@ -9,12 +11,13 @@ from .database.interface_database import (
 
 
 class AnnotatorApp(TrameApp):
-    def __init__(self, server: Server, interface: DatabaseInterface):
+    def __init__(self, server: Server, interface: DatabaseInterface, style: dict[str, Any]) -> None:
         super().__init__(server)
         self.register_interface(interface)
+        self.load_style(style)
 
-        self._logic = AnnotatorAppLogic(self.server)
         self._ui = AnnotatorAppUI(self.server)
+        self._logic = AnnotatorAppLogic(self.server)
 
         self.set_ui()
 
@@ -25,3 +28,6 @@ class AnnotatorApp(TrameApp):
         """Link all database APIs to controller"""
         if interface is not None:
             register_interface(interface, self.ctrl)
+
+    def load_style(self, style: dict[str, Any]) -> None:
+        self.state.trame__vuetify3_config = style

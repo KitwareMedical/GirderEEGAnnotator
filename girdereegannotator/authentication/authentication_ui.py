@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from trame.widgets import html
+from trame.widgets import vuetify3 as v3
 
 from girdereegannotator.database.models import User
 from girdereegannotator.utils.base_ui import BaseUI
@@ -17,7 +18,7 @@ class AuthenticationState:
 
 class AuthenticationUI(html.Div, BaseUI[AuthenticationState]):
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(classes="pa-1 d-flex justify-center", **kwargs)
         self._init_typed_state(self.state, AuthenticationState)
 
         with self:
@@ -26,4 +27,8 @@ class AuthenticationUI(html.Div, BaseUI[AuthenticationState]):
                 v_model=self.name.is_menu_visible,
                 user_state=self.get_sub_state(self.name.user_state),
             )
-            self.auth_dialog = LoginDialog(v_else=True, login_state=self.get_sub_state(self.name.login_state))
+            v3.VBtn(v_else=True, icon="mdi-account", variant="text")
+
+        self.auth_dialog = LoginDialog(
+            v_if=f"!{self.name.user_state._id}", login_state=self.get_sub_state(self.name.login_state)
+        )

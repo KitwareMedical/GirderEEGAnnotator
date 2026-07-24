@@ -1,7 +1,6 @@
 from asyncio import Task
 from collections.abc import Callable
 from inspect import iscoroutinefunction
-from typing import Any
 
 from trame_server import Server
 from trame_server.utils.asynchronous import create_task

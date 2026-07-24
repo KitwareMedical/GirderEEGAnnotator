@@ -13,13 +13,14 @@ class UserProfileMenu(v3.VMenu):
         super().__init__(
             close_on_content_click=False,
             scrim=True,
+            location="end",
             offset=10,
             **kwargs,
         )
         with self:
             with (
                 v3.Template(v_slot_activator="{ props : activatorProps }"),
-                v3.VBtn(v_bind="activatorProps", icon=True),
+                v3.VBtn(v_bind="activatorProps", icon=True, variant="text"),
                 v3.VAvatar(),
             ):
                 html.Span(
