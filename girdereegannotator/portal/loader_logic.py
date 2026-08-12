@@ -10,12 +10,9 @@ from trame_server.utils.asynchronous import create_task
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMedia, EEGMediaFile
+from girdereegannotator.database.models import Asset, BIDSExtension, EEGMedia
 
 from .loader_ui import LoaderState
-
-ANNOTATION_FILE_SUFFIX = "annotations.csv"
-EEG_FILE_EXTENSIONS = (".neonatal", ".edf")
 
 
 class FileValidationError(Exception):
@@ -26,8 +23,12 @@ class AnnotatorLoadingError(Exception):
     pass
 
 
-def are_eeg_files(files: list[EEGMediaFile]) -> bool:
-    return len(files) <= 2 and any(file.name.endswith(EEG_FILE_EXTENSIONS) for file in files)
+def is_eeg_file(file: Asset) -> bool:
+    return file.name.endswith(BIDSExtension.eeg)
+
+
+def is_annotation_file(file: Asset) -> bool:
+    return file.name.endswith(BIDSExtension.annotation)
 
 
 class AsyncTracker:
@@ -71,7 +72,7 @@ def create_async_task(
 
 
 class LoaderLogic:
-    eeg_media_downloaded = Signal(str)
+    eeg_media_downloaded = Signal(str, str)
     eeg_media_loaded = Signal()
 
     def __init__(self, server: Server):
@@ -90,6 +91,9 @@ class LoaderLogic:
     def data(self) -> LoaderState:
         return self.typed_state.data
 
+    def _reset_state(self) -> None:
+        self.typed_state.set_dataclass(LoaderState())
+
     def _cleanup_current_tmpdir(self) -> None:
         if self._current_tmpdir is not None:
             self._current_tmpdir.cleanup()
@@ -99,50 +103,34 @@ class LoaderLogic:
         self._cleanup_current_tmpdir()
         self._current_tmpdir = tempfile.TemporaryDirectory()
 
-    def _format_eeg_files(self, eeg_media_files: list[EEGMediaFile]) -> None:
-        eeg_media_files.sort(key=lambda d: d.name)
-        self.data.eeg_file = eeg_media_files[0]
-
-        annotation_file_name = f"{self.data.eeg_file.name}.{ANNOTATION_FILE_SUFFIX}"
-        annotation_file_path = Path(self._current_tmpdir.name) / annotation_file_name
-        has_annotation_file = len(eeg_media_files) == 2 and eeg_media_files[1].name == annotation_file_name
-
-        self.data.eeg_annotation_file = (
-            eeg_media_files[1]
-            if has_annotation_file
-            else EEGMediaFile(
-                name=annotation_file_name,
-                path=str(annotation_file_path),
-            )
-        )
-
-    def _load_eeg_media_files(self, eeg_media_id: str) -> None:
+    def _load_eeg_media_files(self, eeg_media: EEGMedia) -> None:
         self._create_tmp_dir()
 
-        eeg_media_files: list[EEGMediaFile] = self.server.controller.download_eeg_media_files(
-            eeg_media_id, self._current_tmpdir.name
+        eeg_media_files: tuple[Asset, Asset] = self.server.controller.download_eeg_media_files(
+            eeg_media,
+            self._current_tmpdir.name,
+            annotation_file=eeg_media.annotations[0] if eeg_media.annotations else None,
         )
+        eeg_file, annotation_file = eeg_media_files
 
-        if len(eeg_media_files) == 0:
-            raise FileValidationError("No EEG files to load")
+        if not is_eeg_file(eeg_file):
+            raise FileValidationError(f"EEG file {eeg_file.name} is invalid")
 
-        if not are_eeg_files(eeg_media_files):
-            raise FileValidationError("EEG files are invalid")
+        if not is_annotation_file(annotation_file):
+            raise FileValidationError(f"Annotation file {annotation_file.name} is invalid")
 
-        self._format_eeg_files(eeg_media_files)
+        self.data.eeg_file = eeg_file
+        self.data.annotation_file = annotation_file
 
         try:
-            self.eeg_media_downloaded(self.data.eeg_file.path)
+            self.eeg_media_downloaded(self.data.eeg_file.path, self.data.annotation_file.path)
         except Exception as e:
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
-    def _reset_state(self) -> None:
-        self.typed_state.set_dataclass(LoaderState())
-
-    def load_eeg_media_files(self, eeg_media_id: str) -> None:
+    def load_eeg_media_files(self, eeg_media: EEGMedia) -> None:
         def _load() -> None:
             try:
-                self._load_eeg_media_files(eeg_media_id)
+                self._load_eeg_media_files(eeg_media)
                 self.eeg_media_loaded()
 
             except (FileValidationError, AnnotatorLoadingError) as e:
@@ -154,16 +142,14 @@ class LoaderLogic:
             self.task.cancel()
         self.task = create_async_task(self.load_tracker, _load)
 
-    def save_eeg_annotations(self, eeg_media_id: str) -> EEGMedia:
+    def save_annotations(self, eeg_media: EEGMedia) -> None:
         if self._current_tmpdir is None:
             raise RuntimeError("Temporary directory is not initialized")
 
-        annotation_file = self.data.eeg_annotation_file
+        annotation_file = self.data.annotation_file
 
-        if annotation_file is None:
-            raise RuntimeError("Annotation file is missing")
+        if annotation_file.path is None or not Path(annotation_file.path).exists():
+            raise FileNotFoundError(f"Annotation file ({annotation_file.path}) does not exist")
 
-        if not Path(annotation_file.path).exists():
-            raise FileNotFoundError(f"Annotation file does not exist: {annotation_file.path}")
-
-        return self.server.controller.save_eeg_annotations(eeg_media_id, annotation_file)
+        annotation_file = self.server.controller.save_annotations(eeg_media, annotation_file)
+        eeg_media.annotations.append(annotation_file)

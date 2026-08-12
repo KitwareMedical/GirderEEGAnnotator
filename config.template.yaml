@@ -1,0 +1,5 @@
+backend:
+  type: girder
+  api_url: # the Girder API url
+  collection_id: # The collection id to open
+  api_key: # Optional api key to log in autoamtically (dev)
