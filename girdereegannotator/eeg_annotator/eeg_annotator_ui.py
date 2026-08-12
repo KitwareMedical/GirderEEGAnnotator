@@ -2,10 +2,10 @@ from dataclasses import dataclass, field
 
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
-from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGMedia
+from girdereegannotator.utils.base_ui import BaseUI
 
 from .components.shortcuts_panel import ShortcutsPanel
 from .eeg_viewer_ui import EEGViewerUI
@@ -16,19 +16,19 @@ class EEGAnnotatorState:
     eeg_media: EEGMedia = field(default_factory=EEGMedia)
 
 
-class EGGAnnotatorUI(html.Div):
+class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     previous_clicked = Signal()
     next_clicked = Signal()
     save_annotations_clicked = Signal()
 
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="fill-height", **kwargs)
-        self.typed_state = TypedState(self.state, EEGAnnotatorState)
+        self._init_typed_state(self.state, EEGAnnotatorState)
 
         with self:
             self.viewer_ui = EEGViewerUI(style="height: calc(100% - 50px);")
 
-            with html.Div(classes="d-flex align-center justify-center", style="height: 50px; gap: 8px;", **kwargs):
+            with html.Div(classes="d-flex align-center justify-center", style="height: 50px;", **kwargs):
                 self._build_icon_button(
                     click=self.previous_clicked,
                     icon="mdi-chevron-left",
@@ -51,7 +51,6 @@ class EGGAnnotatorUI(html.Div):
                     click=self.save_annotations_clicked,
                     tooltip="Save annotations",
                 )
-                v3.VSpacer()
                 ShortcutsPanel()
 
     def _build_icon_button(self, icon: str, tooltip: str | None = None, **kwargs) -> None:

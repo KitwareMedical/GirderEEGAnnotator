@@ -3,9 +3,9 @@ from enum import Enum, auto
 
 from trame.widgets import html, rca
 from trame.widgets import vuetify3 as v3
-from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import Asset
+from girdereegannotator.utils.base_ui import BaseUI
 
 
 class LoadStatus(Enum):
@@ -23,12 +23,12 @@ class EEGViewerState:
     annotation_file: Asset = field(default_factory=Asset)
 
 
-class EEGViewerUI(html.Div):
+class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
     def __init__(self, ref: str = "eegview", **kwargs) -> None:
         super().__init__(**kwargs)
         self._ref = ref
         self._root_elem_ref = f"trame.refs.{self._ref}.$refs.rootElem"
-        self.viewer_state = TypedState(self.state, EEGViewerState)
+        self._init_typed_state(self.state, EEGViewerState)
 
         with self:
             with (
@@ -53,10 +53,10 @@ class EEGViewerUI(html.Div):
             with html.Div(v_else=True, classes="d-flex flex-column justify-center align-center fill-height"):
                 v3.VProgressCircular(v_if=self.is_load_status(LoadStatus.LOADING), indeterminate=True, size=100)
                 with html.Div(
-                    v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.viewer_state.name.status_message}",
+                    v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message}",
                 ):
                     v3.VIcon(color="warning", icon="mdi-alert-circle", size=100)
-                    html.Span("{{ " + self.viewer_state.name.status_message + " }}")
+                    html.Span("{{ " + self.name.status_message + " }}")
 
     def is_load_status(self, load_status: LoadStatus) -> str:
-        return f"({self.viewer_state.name.load_status} == {load_status.value})"
+        return f"({self.name.load_status} == {load_status.value})"

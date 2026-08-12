@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 
 from trame.widgets import html
-from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import User
+from girdereegannotator.utils.base_ui import BaseUI
 
 from .components import LoginDialog, LoginState, UserProfileMenu
 
@@ -15,17 +15,15 @@ class AuthenticationState:
     is_menu_visible: bool = False
 
 
-class AuthenticationUI(html.Div):
+class AuthenticationUI(html.Div, BaseUI[AuthenticationState]):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        auth_state = TypedState(self.state, AuthenticationState)
-        user_state = auth_state.get_sub_state(auth_state.name.user_state)
-        login_state = auth_state.get_sub_state(auth_state.name.login_state)
+        self._init_typed_state(self.state, AuthenticationState)
 
         with self:
             self.auth_menu = UserProfileMenu(
-                v_if=user_state.name._id,
-                v_model=auth_state.name.is_menu_visible,
-                user_state=user_state,
+                v_if=self.name.user_state._id,
+                v_model=self.name.is_menu_visible,
+                user_state=self.get_sub_state(self.name.user_state),
             )
-            self.auth_dialog = LoginDialog(v_else=True, login_state=login_state)
+            self.auth_dialog = LoginDialog(v_else=True, login_state=self.get_sub_state(self.name.login_state))
