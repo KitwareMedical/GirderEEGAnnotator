@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-08-12)
+
+### Documentation
+
+- Adapt pyproject.toml and README
+  ([`04ef602`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/04ef6025db2c61607eda4e9d60868873fdbc84ae))
+
+### Features
+
+- **plugin**: Adapt girder database implementation to use GirderBIDS plugin
+  ([`5fa0516`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5fa0516d3acc78693b3753607e7c64343f75c6c7))
+
+
 ## v1.2.0 (2026-07-01)
 
 ### Bug Fixes
