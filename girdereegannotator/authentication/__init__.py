@@ -1,4 +1,4 @@
-from .auth_logic import AuthLogic
-from .auth_ui import AuthUI
+from .authentication_logic import AuthenticationLogic
+from .authentication_ui import AuthenticationUI
 
-__all__ = ["AuthLogic", "AuthUI"]
+__all__ = ["AuthenticationLogic", "AuthenticationUI"]
