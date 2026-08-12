@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-08-12)
+
+### Features
+
+- **user menu**: Add user menu instead of plain logout button
+  ([`b138e9e`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/b138e9e95fa1d527fdf9a1db76f92cb12063c48c))
+
+
 ## v1.3.0 (2026-08-12)
 
 ### Documentation
