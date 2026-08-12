@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 
-class EGGAnnotatorWindow:
+class RCAView:
     def __init__(self):
         self._context = None
         self._events = ["MouseMove", "LeftButtonPress", "RightButtonPress", "KeyDown"]

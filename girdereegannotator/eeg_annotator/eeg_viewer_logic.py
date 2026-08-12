@@ -3,16 +3,16 @@ from asyncio import Task
 from collections.abc import Callable
 from inspect import iscoroutinefunction
 from pathlib import Path
-from typing import Any
 
+from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 from trame_server.utils.asynchronous import create_task
 from trame_server.utils.typed_state import TypedState
-from undo_stack import Signal
 
 from girdereegannotator.database.models import Asset, BIDSExtension, EEGMedia
 
-from .loader_ui import LoaderState
+from .components import RCAView
+from .eeg_viewer_ui import EEGViewerState, EEGViewerUI, LoadStatus
 
 
 class FileValidationError(Exception):
@@ -32,27 +32,19 @@ def is_annotation_file(file: Asset) -> bool:
 
 
 class AsyncTracker:
-    def __init__(self, server: Server, loading_key: str) -> None:
-        self.loading_key = loading_key
+    def __init__(
+        self,
+        server: Server,
+    ) -> None:
         self.server = server.root_server
         self.state = server.state
 
-    @property
-    def loading(self) -> Any:
-        return self.state[self.loading_key]
-
-    @loading.setter
-    def loading(self, value: bool) -> None:
-        self.state[self.loading_key] = value
-
     async def __aenter__(self) -> None:
-        with self.state:
-            self.loading = True
+        self.state.flush()
         await self.server.network_completion
 
     async def __aexit__(self, *_args) -> None:
-        with self.state:
-            self.loading = False
+        self.state.flush()
         await self.server.network_completion
 
 
@@ -71,28 +63,31 @@ def create_async_task(
     return create_task(async_task())
 
 
-class LoaderLogic:
-    eeg_media_downloaded = Signal(str, str)
-    eeg_media_loaded = Signal()
+class EEGViewerLogic:
+    view_handler: RcaViewAdapter
 
     def __init__(self, server: Server):
         self.server = server
-        self.typed_state = TypedState(self.server.state, LoaderState)
+        self.rca_view = RCAView()
+        self.typed_state = TypedState(self.server.state, EEGViewerState)
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
         self.task: Task | None = None
 
-        self.load_tracker = AsyncTracker(server, self.name.eeg_loading)
+        self.load_tracker = AsyncTracker(server)
 
     @property
-    def name(self) -> LoaderState:
+    def name(self) -> EEGViewerState:
         return self.typed_state.name
 
     @property
-    def data(self) -> LoaderState:
+    def data(self) -> EEGViewerState:
         return self.typed_state.data
 
-    def _reset_state(self) -> None:
-        self.typed_state.set_dataclass(LoaderState())
+    def set_ui(self, ui: EEGViewerUI) -> None:
+        self.view_handler = ui.rca.create_view_handler(self.rca_view)
+
+    def reset_state(self) -> None:
+        self.typed_state.set_dataclass(EEGViewerState())
 
     def _cleanup_current_tmpdir(self) -> None:
         if self._current_tmpdir is not None:
@@ -102,6 +97,10 @@ class LoaderLogic:
     def _create_tmp_dir(self) -> None:
         self._cleanup_current_tmpdir()
         self._current_tmpdir = tempfile.TemporaryDirectory()
+
+    def _set_files(self, file_path: str, annotation_file_path: str) -> None:
+        self.rca_view.set_files(file_path, annotation_file_path)
+        self.view_handler.update_size(None, self.rca_view.window_size)
 
     def _load_eeg_media_files(self, eeg_media: EEGMedia) -> None:
         self._create_tmp_dir()
@@ -123,7 +122,7 @@ class LoaderLogic:
         self.data.annotation_file = annotation_file
 
         try:
-            self.eeg_media_downloaded(self.data.eeg_file.path, self.data.annotation_file.path)
+            self._set_files(self.data.eeg_file.path, self.data.annotation_file.path)
         except Exception as e:
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
@@ -131,13 +130,15 @@ class LoaderLogic:
         def _load() -> None:
             try:
                 self._load_eeg_media_files(eeg_media)
-                self.eeg_media_loaded()
+                self.data.load_status = LoadStatus.LOADED
 
             except (FileValidationError, AnnotatorLoadingError) as e:
-                self.typed_state.data.load_error = str(e)
+                self.data.load_status = LoadStatus.ERROR
+                self.data.status_message = str(e)
                 raise e
 
-        self._reset_state()
+        self.reset_state()
+        self.data.load_status = LoadStatus.LOADING
         if self.task and not self.task.done():
             self.task.cancel()
         self.task = create_async_task(self.load_tracker, _load)

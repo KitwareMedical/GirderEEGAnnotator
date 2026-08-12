@@ -1,33 +1,66 @@
-from trame.widgets import html, rca
-from trame.widgets import vuetify3 as v3
+from dataclasses import dataclass, field
 
-from .eeg_annotator_shortcuts_panel import ShortcutsPanel
+from trame.widgets import html
+from trame.widgets import vuetify3 as v3
+from trame_server.utils.typed_state import TypedState
+from undo_stack import Signal
+
+from girdereegannotator.database.models import EEGMedia
+
+from .components.shortcuts_panel import ShortcutsPanel
+from .eeg_viewer_ui import EEGViewerUI
+
+
+@dataclass
+class EEGAnnotatorState:
+    eeg_media: EEGMedia = field(default_factory=EEGMedia)
 
 
 class EGGAnnotatorUI(html.Div):
+    previous_clicked = Signal()
+    next_clicked = Signal()
+    save_annotations_clicked = Signal()
+
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="fill-height", **kwargs)
-        self._ref = "eegview"
-        self._root_elem_ref = f"trame.refs.{self._ref}.$refs.rootElem"
-        self._build_ui()
+        self.typed_state = TypedState(self.state, EEGAnnotatorState)
 
-    def _build_ui(self) -> None:
-        with (
-            self,
-            v3.VHover(
-                v_slot="{ props }",
-                update_modelValue=(
-                    "(value) => {if ("
-                    f"value && {self._root_elem_ref} != window.document.activeElement"
-                    ") {"
-                    f"{self._root_elem_ref}.focus();"
-                    "} }"
-                ),
-            ),
-        ):
-            self.rca = rca.RemoteControlledArea(
-                v_bind="props",
-                ref=self._ref,
-                send_mouse_move=True,
-            )
-            ShortcutsPanel()
+        with self:
+            self.viewer_ui = EEGViewerUI(style="height: calc(100% - 50px);")
+
+            with html.Div(classes="d-flex align-center justify-center", style="height: 50px; gap: 8px;", **kwargs):
+                self._build_icon_button(
+                    click=self.previous_clicked,
+                    icon="mdi-chevron-left",
+                    tooltip="Previous EEG",
+                )
+                self._build_icon_button(
+                    click=self.next_clicked,
+                    icon="mdi-chevron-right",
+                    tooltip="Next EEG",
+                )
+                v3.VSpacer()
+
+                html.Div(
+                    "{{ " + self.typed_state.name.eeg_media.name + " }}", v_if=self.typed_state.name.eeg_media.name
+                )
+
+                v3.VSpacer()
+                self._build_icon_button(
+                    icon="mdi-content-save-outline",
+                    click=self.save_annotations_clicked,
+                    tooltip="Save annotations",
+                )
+                v3.VSpacer()
+                ShortcutsPanel()
+
+    def _build_icon_button(self, icon: str, tooltip: str | None = None, **kwargs) -> None:
+        with v3.VBtn(icon=icon, variant="text", **kwargs):
+            if tooltip is not None:
+                v3.VTooltip(
+                    text=tooltip,
+                    activator="parent",
+                    transition="slide-y-transition",
+                    location="bottom start",
+                )
+            v3.VIcon(icon=icon)
