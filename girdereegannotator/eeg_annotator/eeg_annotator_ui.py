@@ -4,7 +4,7 @@ from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMedia
+from girdereegannotator.database.models import EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
 
 from .components.shortcuts_panel import ShortcutsPanel
@@ -13,7 +13,7 @@ from .eeg_viewer_ui import EEGViewerUI
 
 @dataclass
 class EEGAnnotatorState:
-    eeg_media: EEGMedia = field(default_factory=EEGMedia)
+    eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
 
 
 class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
@@ -42,7 +42,7 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                 v3.VSpacer()
 
                 html.Div(
-                    "{{ " + self.typed_state.name.eeg_media.name + " }}", v_if=self.typed_state.name.eeg_media.name
+                    "{{ " + self.typed_state.name.eeg_fileset.name + " }}", v_if=self.typed_state.name.eeg_fileset.name
                 )
 
                 v3.VSpacer()

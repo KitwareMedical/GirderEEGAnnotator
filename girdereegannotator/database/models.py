@@ -41,21 +41,21 @@ class BIDSDataset(Model):
 
 
 @dataclass
-class EEGMediaFile(Model):
+class EEGFile(Model):
     _id: str | None = None
     name: str | None = None
 
 
 @dataclass
-class AnnotationFile(EEGMediaFile):
+class AnnotationFile(EEGFile):
     annotator_id: str | None = None
 
 
 @dataclass
-class EEGMedia:
+class EEGFileset:
     name: str | None = None
-    raw_eeg: EEGMediaFile = field(default_factory=EEGMediaFile)
-    eeg: EEGMediaFile = field(default_factory=EEGMediaFile)
+    raw_eeg: EEGFile = field(default_factory=EEGFile)
+    eeg: EEGFile = field(default_factory=EEGFile)
     annotations: list[AnnotationFile] = field(default_factory=list)
     upload_dataset_id: str | None = None
     upload_folder_id: str | None = None

@@ -14,8 +14,8 @@ from ..models import (
     AnnotationFile,
     Asset,
     BIDSDataset,
-    EEGMedia,
-    EEGMediaFile,
+    EEGFile,
+    EEGFileset,
     GirderModel,
     Model,
     User,
@@ -98,25 +98,25 @@ class GirderDatabase(DatabaseInterface):
     def list_datasets(self, _collection_id: str | None = None) -> list[BIDSDataset]:
         return self.bids_handler.list_datasets(self.collection_id)
 
-    def list_eeg_media(self, dataset: BIDSDataset) -> list[EEGMedia]:
-        return self.bids_handler.list_eeg_media(dataset)
+    def list_eeg_filesets(self, dataset: BIDSDataset) -> list[EEGFileset]:
+        return self.bids_handler.list_eeg_filesets(dataset)
 
-    def _download_media_file(self, media_file: EEGMediaFile, download_dir: str, refresh: bool = False) -> Asset:
+    def _download_media_file(self, media_file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
         media_file_path = Path(download_dir) / media_file.name
         return self.bids_handler.download_file(media_file, media_file_path, refresh)
 
-    def download_eeg_media_files(
+    def download_eeg_files(
         self,
-        eeg_media: EEGMedia,
+        eeg_fileset: EEGFileset,
         download_dir: str,
         annotation_file: AnnotationFile | None = None,
     ) -> tuple[Asset, Asset]:
-        self.bids_handler.get_eeg_media_files(eeg_media, compute=True)
+        self.bids_handler.get_eeg_files(eeg_fileset, compute=True)
 
-        eeg = self._download_media_file(eeg_media.eeg, download_dir)
+        eeg = self._download_media_file(eeg_fileset.eeg, download_dir)
 
         if annotation_file is None:
-            annotation_name = self.bids_handler.get_next_annotation_file_name(eeg_media)
+            annotation_name = self.bids_handler.get_next_annotation_file_name(eeg_fileset)
             annotation = Asset(annotation_name, str(Path(download_dir) / annotation_name))
         else:
             # Reload because annotation could have been updated
@@ -124,9 +124,9 @@ class GirderDatabase(DatabaseInterface):
 
         return eeg, annotation
 
-    def save_annotations(self, eeg_media: EEGMedia, annotation: Asset) -> AnnotationFile:
+    def save_annotations(self, eeg_fileset: EEGFileset, annotation: Asset) -> AnnotationFile:
         user = self.get_me()
         file = self.bids_handler.upload_file(
-            annotation, eeg_media.upload_folder_id, source_id=eeg_media.eeg._id, reuse_existing=True
+            annotation, eeg_fileset.upload_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
         )
         return AnnotationFile(_id=file._id, name=file.name, annotator_id=user._id)

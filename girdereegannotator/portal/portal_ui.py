@@ -5,7 +5,7 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import BIDSDataset, EEGMedia
+from girdereegannotator.database.models import BIDSDataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
 
 from .components.breadcrumbs import Breadcrumbs, BreadcrumbsState
@@ -16,8 +16,8 @@ class PortalState:
     breadcrumbs_state: BreadcrumbsState = field(default_factory=BreadcrumbsState)
     dataset_index: int | None = None
     dataset_list: list[BIDSDataset] = field(default_factory=list)
-    eeg_media_index: int | None = None
-    eeg_media_list: list[EEGMedia] = field(default_factory=list)
+    eeg_fileset_index: int | None = None
+    eeg_fileset_list: list[EEGFileset] = field(default_factory=list)
 
 
 class PortalList(v3.VList):
@@ -40,16 +40,16 @@ class PortalEEGList(PortalList):
         with (
             self,
             PortalListItem(
-                v_for=f"(eeg_media, index) in {self.typed_state.name.eeg_media_list}",
-                title=("eeg_media.name",),
-                click=f"{self.typed_state.name.eeg_media_index} = index",  # enables to highlight item when hovered
+                v_for=f"(eeg_fileset, index) in {self.typed_state.name.eeg_fileset_list}",
+                title=("eeg_fileset.name",),
+                click=f"{self.typed_state.name.eeg_fileset_index} = index",  # enables to highlight item when hovered
             ),
             v3.Template(v_slot_append=True),
         ):
             v3.VChip(
-                v_if="eeg_media.annotations.length",
+                v_if="eeg_fileset.annotations.length",
                 append_icon="mdi-tag",
-                text=("eeg_media.annotations.length",),
+                text=("eeg_fileset.annotations.length",),
                 color="warning",
             )
 

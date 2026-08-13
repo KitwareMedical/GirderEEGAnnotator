@@ -1,7 +1,7 @@
 from trame_server import Server
 from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGMedia
+from girdereegannotator.database.models import EEGFileset
 from girdereegannotator.eeg_annotator.eeg_viewer_logic import EEGViewerLogic
 from girdereegannotator.utils.base_logic import BaseLogic
 
@@ -11,28 +11,29 @@ from .eeg_annotator_ui import EEGAnnotatorState, EGGAnnotatorUI
 class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
     next_clicked = Signal()
     previous_clicked = Signal()
-    eeg_media_updated = Signal(EEGMedia)
+    eeg_fileset_updated = Signal(EEGFileset)
 
     def __init__(self, server: Server):
         super().__init__(server, EEGAnnotatorState)
 
-        self.eeg_media = self.typed_state.get_sub_state(self.name.eeg_media)
+        self.eeg_fileset = self.typed_state.get_sub_state(self.name.eeg_fileset)
         self._viewer_logic = EEGViewerLogic(server)
 
-    def load_eeg_media(self, eeg_media: EEGMedia | None) -> None:
-        if eeg_media is None:
+    def load_eeg_fileset(self, eeg_fileset: EEGFileset | None) -> None:
+        if eeg_fileset is None:
             self.reset_state()
             return
 
-        self.eeg_media.set_dataclass(eeg_media)
-        self._viewer_logic.load_eeg_media_files(self.data.eeg_media)
+        self.eeg_fileset.set_dataclass(eeg_fileset)
+        self._viewer_logic.load_eeg_files(self.data.eeg_fileset)
 
     def _save_annotations(self) -> None:
-        eeg_media = self.eeg_media.get_dataclass()
-        self._viewer_logic.save_annotations(eeg_media)
+        eeg_fileset = self.eeg_fileset.get_dataclass()
+        self._viewer_logic.save_annotations(eeg_fileset)
 
-        self.eeg_media.set_dataclass(eeg_media)
-        self.eeg_media_updated(eeg_media)
+        # Update state with latest annotations
+        self.eeg_fileset.set_dataclass(eeg_fileset)
+        self.eeg_fileset_updated(eeg_fileset)
 
     def reset_state(self) -> None:
         super().reset_state()

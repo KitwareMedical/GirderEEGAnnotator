@@ -15,8 +15,8 @@ from ..models import (
     BIDSDataset,
     BIDSExtension,
     BIDSSuffix,
-    EEGMedia,
-    EEGMediaFile,
+    EEGFile,
+    EEGFileset,
     GirderModel,
 )
 
@@ -40,7 +40,7 @@ class GirderBIDSHandler:
     def _extract_file_base_name(filename: str, suffix: str, extension: str) -> str:
         return filename.removesuffix(extension).removesuffix(suffix)
 
-    def _load_asset_from_file(self, file: EEGMediaFile) -> GirderModel | None:
+    def _load_asset_from_file(self, file: EEGFile) -> GirderModel | None:
         assets = self.girder_client.listFile(itemId=file._id)
         return next(assets, None)
 
@@ -60,12 +60,12 @@ class GirderBIDSHandler:
             },
         )
 
-    def _find_filtered_eeg_file(self, eeg_media: EEGMedia) -> EEGMediaFile | None:
+    def _find_filtered_eeg_file(self, eeg_fileset: EEGFileset) -> EEGFile | None:
         eeg_files = self.girder_client.get(
             self.resource.file,
             parameters={
-                "dataset_id": eeg_media.upload_dataset_id,
-                "source_id": eeg_media.raw_eeg._id,
+                "dataset_id": eeg_fileset.upload_dataset_id,
+                "source_id": eeg_fileset.raw_eeg._id,
                 "suffix": self.suffix.eeg.removeprefix("_"),
                 "extension": self.ext.eeg.removeprefix("."),
                 "limit": 1,
@@ -76,14 +76,14 @@ class GirderBIDSHandler:
         if filtered_eeg_file is None:
             return None
 
-        return EEGMediaFile(_id=filtered_eeg_file["_id"], name=filtered_eeg_file["name"])
+        return EEGFile(_id=filtered_eeg_file["_id"], name=filtered_eeg_file["name"])
 
-    def _find_annotation_files(self, eeg_media: EEGMedia) -> list[AnnotationFile]:
+    def _find_annotation_files(self, eeg_fileset: EEGFileset) -> list[AnnotationFile]:
         eeg_annotations_files = self.girder_client.get(
             self.resource.file,
             parameters={
-                "dataset_id": eeg_media.upload_dataset_id,
-                "source_id": eeg_media.eeg._id,
+                "dataset_id": eeg_fileset.upload_dataset_id,
+                "source_id": eeg_fileset.eeg._id,
                 "suffix": self.suffix.annotation.removeprefix("_"),
                 "extension": self.ext.annotation.removeprefix("."),
                 "limit": 0,
@@ -97,9 +97,9 @@ class GirderBIDSHandler:
             for annotation_file in eeg_annotations_files
         ]
 
-    def _create_upload_folder(self, eeg_media: EEGMedia) -> None:
-        path_folders = self.girder_client.get(f"{self.resource.file}/{eeg_media.raw_eeg._id}/path")
-        folder_id = eeg_media.upload_dataset_id
+    def _create_upload_folder(self, eeg_fileset: EEGFileset) -> None:
+        path_folders = self.girder_client.get(f"{self.resource.file}/{eeg_fileset.raw_eeg._id}/path")
+        folder_id = eeg_fileset.upload_dataset_id
 
         for folder in path_folders:
             new_folder = self.girder_client.createResource(
@@ -108,24 +108,24 @@ class GirderBIDSHandler:
             )
             folder_id = new_folder["_id"]
 
-        eeg_media.upload_folder_id = folder_id
+        eeg_fileset.upload_folder_id = folder_id
 
-    def _compute_filtered_eeg_file(self, eeg_media: EEGMedia) -> EEGMediaFile:
+    def _compute_filtered_eeg_file(self, eeg_fileset: EEGFileset) -> EEGFile:
         with TemporaryDirectory() as temp_dir:
             temp_dir_path = Path(temp_dir)
-            raw_eeg_path = temp_dir_path / eeg_media.raw_eeg.name
+            raw_eeg_path = temp_dir_path / eeg_fileset.raw_eeg.name
             eeg_desc = "desc-filtered"
-            base_name = self._extract_file_base_name(eeg_media.raw_eeg.name, self.suffix.eeg, self.ext.eeg)
+            base_name = self._extract_file_base_name(eeg_fileset.raw_eeg.name, self.suffix.eeg, self.ext.eeg)
             eeg_path = temp_dir_path / f"{base_name}_{eeg_desc}{self.suffix.eeg}{self.ext.eeg}"
 
-            self.download_file(eeg_media.raw_eeg, raw_eeg_path)
+            self.download_file(eeg_fileset.raw_eeg, raw_eeg_path)
 
             eeg = filter_eeg(raw_eeg_path, eeg_path)
-            return self.upload_file(eeg, eeg_media.upload_folder_id, source_id=eeg_media.raw_eeg._id)
+            return self.upload_file(eeg, eeg_fileset.upload_folder_id, source_id=eeg_fileset.raw_eeg._id)
 
     def upload_file(
         self, asset: Asset, folder_id: str, source_id: str | None = None, reuse_existing: bool = False
-    ) -> EEGMediaFile:
+    ) -> EEGFile:
         file = self.girder_client.createResource(
             self.resource.file,
             params={
@@ -137,46 +137,46 @@ class GirderBIDSHandler:
         )
         self._upload_asset_to_file(file["_id"], asset)
 
-        return EEGMediaFile(_id=file["_id"], name=file["name"])
+        return EEGFile(_id=file["_id"], name=file["name"])
 
-    def download_file(self, file: EEGMediaFile, path: Path, refresh: bool = False) -> Asset:
+    def download_file(self, file: EEGFile, path: Path, refresh: bool = False) -> Asset:
         asset = self._load_asset_from_file(file)
         if not path.exists() or refresh:
             self.girder_client.downloadFile(fileId=asset["_id"], path=str(path))
         return Asset(name=asset["name"], path=str(path))
 
-    def get_next_annotation_file_name(self, eeg_media: EEGMedia) -> str:
+    def get_next_annotation_file_name(self, eeg_fileset: EEGFileset) -> str:
         """Return the annotation filename using the smallest available number."""
         pattern = re.compile(r"_desc-annotation(\d+)_")
 
         used_numbers = {
-            int(match.group(1)) for annotation in eeg_media.annotations if (match := pattern.search(annotation.name))
+            int(match.group(1)) for annotation in eeg_fileset.annotations if (match := pattern.search(annotation.name))
         }
 
         next_number = 1
         while next_number in used_numbers:
             next_number += 1
 
-        base_name = eeg_media.name.removesuffix(self.ext.eeg).removesuffix(self.suffix.eeg)
+        base_name = eeg_fileset.name.removesuffix(self.ext.eeg).removesuffix(self.suffix.eeg)
         annotation_desc = f"desc-annotation{next_number}"
         return f"{base_name}_{annotation_desc}{self.suffix.annotation}{self.ext.annotation}"
 
-    def get_eeg_media_files(self, eeg_media: EEGMedia, compute: bool = False) -> None:
-        if compute and eeg_media.upload_folder_id is None:
-            self._create_upload_folder(eeg_media)
+    def get_eeg_files(self, eeg_fileset: EEGFileset, compute: bool = False) -> None:
+        if compute and eeg_fileset.upload_folder_id is None:
+            self._create_upload_folder(eeg_fileset)
 
-        if eeg_media.eeg.name is None:
-            filtered_eeg_file = self._find_filtered_eeg_file(eeg_media)
+        if eeg_fileset.eeg.name is None:
+            filtered_eeg_file = self._find_filtered_eeg_file(eeg_fileset)
             if filtered_eeg_file is None:
                 if not compute:
                     return
-                filtered_eeg_file = self._compute_filtered_eeg_file(eeg_media)
-            eeg_media.eeg = filtered_eeg_file
+                filtered_eeg_file = self._compute_filtered_eeg_file(eeg_fileset)
+            eeg_fileset.eeg = filtered_eeg_file
 
-        eeg_media.annotations = self._find_annotation_files(eeg_media)
+        eeg_fileset.annotations = self._find_annotation_files(eeg_fileset)
 
-    def list_eeg_media(self, dataset: BIDSDataset, offset: int = 0, limit: int = 20) -> list[EEGMedia]:
-        eeg_media_list = []
+    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int = 0, limit: int = 20) -> list[EEGFileset]:
+        eeg_fileset_list = []
         eeg_files = self.girder_client.get(
             self.resource.file,
             parameters={
@@ -189,16 +189,16 @@ class GirderBIDSHandler:
         )
 
         for eeg_file in eeg_files:
-            eeg_media = EEGMedia(
+            eeg_fileset = EEGFileset(
                 name=eeg_file["name"],
-                raw_eeg=EEGMediaFile(_id=eeg_file["_id"], name=eeg_file["name"]),
+                raw_eeg=EEGFile(_id=eeg_file["_id"], name=eeg_file["name"]),
                 upload_dataset_id=dataset.derivative_dataset_id,
             )
-            self.get_eeg_media_files(eeg_media)
+            self.get_eeg_files(eeg_fileset)
 
-            eeg_media_list.append(eeg_media)
+            eeg_fileset_list.append(eeg_fileset)
 
-        return eeg_media_list
+        return eeg_fileset_list
 
     def list_datasets(self, collection_id: str, offset: int = 0, limit: int = 20) -> list[BIDSDataset]:
         dataset_list = []
