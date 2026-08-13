@@ -96,9 +96,13 @@ class GirderDatabase(DatabaseInterface):
         return self._user_as_dataclass(user) if user else None
 
     def list_datasets(self, _collection_id: str | None = None) -> list[BIDSDataset]:
+        if not self.authenticated:
+            return []
         return self.bids_handler.list_datasets(self.collection_id)
 
     def list_eeg_filesets(self, dataset: BIDSDataset) -> list[EEGFileset]:
+        if not self.authenticated:
+            return []
         return self.bids_handler.list_eeg_filesets(dataset)
 
     def _download_media_file(self, media_file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
