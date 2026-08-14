@@ -18,10 +18,23 @@ class ExpandableListState(Generic[V]):
 T = TypeVar("T", bound=ExpandableListState)
 
 
+class ExpandableListItemMetadata(v3.VList):
+    def __init__(self, metadata: str, **kwargs):
+        super().__init__(classes="metadata-list", density="compact", **kwargs)
+
+        with (
+            self,
+            v3.VListItem(v_for=f"(value, key) in {metadata}", classes="metadata-item"),
+            html.Div(classes="metadata-content"),
+        ):
+            html.Span("{{ key }}", classes="text-subtitle-2")
+            html.Span("{{ value }}", classes="text-right text-body-2 metadata-ellipsis")
+
+
 class ExpandableListItem(v3.VListItem):
     def __init__(self, expanded: str, **kwargs):
         super().__init__(
-            classes=("['portal-list-item', { 'portal-list-item--expanded': " + expanded + " }]",),
+            classes=("['expandable-list-item', { 'expandable-list-item--expanded': " + expanded + " }]",),
             active=(expanded,),
             rounded=True,
             **kwargs,
@@ -38,7 +51,7 @@ class ExpandableList(v3.VList, Generic[T, V]):
 
     def __init__(self, list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
-            classes="portal-list",
+            classes="expandable-list",
             variant="tonal",
             **kwargs,
         )
@@ -71,6 +84,9 @@ class ExpandableList(v3.VList, Generic[T, V]):
             __events=[("click_stop", "click.stop")],
             **kwargs,
         )
+
+    def build_metadata(self, metadata: str) -> None:
+        ExpandableListItemMetadata(metadata)
 
     def select_item(self, index: int) -> None:
         self.list_state.data.current_index = index

@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 
-from trame.widgets import html
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import BIDSDataset
@@ -22,4 +21,4 @@ class DatasetList(ExpandableList[DatasetListState, BIDSDataset]):
             self.build_select_item_button(icon="mdi-arrow-right")
 
         with self.expand_slot:
-            html.Span("Metadata")
+            self.build_metadata(f"{self.item}.metadata")

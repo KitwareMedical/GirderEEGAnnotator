@@ -36,7 +36,7 @@ class Model:
 class BIDSDataset(Model):
     _id: str | None = None
     name: str | None = None
-    dataset_description: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, str] = field(default_factory=dict)
     derivative_dataset_id: str | None = None
 
 
@@ -54,6 +54,7 @@ class AnnotationFile(EEGFile):
 @dataclass
 class EEGFileset:
     name: str | None = None
+    metadata: dict[str, str] = field(default_factory=dict)
     raw_eeg: EEGFile = field(default_factory=EEGFile)
     eeg: EEGFile = field(default_factory=EEGFile)
     annotations: list[AnnotationFile] = field(default_factory=list)

@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 
-from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 
@@ -29,4 +28,4 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
             self.build_select_item_button(icon="mdi-cast-variant")
 
         with self.expand_slot:
-            html.Span("Metadata")
+            self.build_metadata(f"{self.item}.metadata")

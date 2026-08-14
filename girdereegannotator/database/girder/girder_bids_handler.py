@@ -191,6 +191,7 @@ class GirderBIDSHandler:
         for eeg_file in eeg_files:
             eeg_fileset = EEGFileset(
                 name=eeg_file["name"],
+                metadata=eeg_file["meta"],
                 raw_eeg=EEGFile(_id=eeg_file["_id"], name=eeg_file["name"]),
                 upload_dataset_id=dataset.derivative_dataset_id,
             )
@@ -214,7 +215,7 @@ class GirderBIDSHandler:
                 BIDSDataset(
                     _id=dataset["_id"],
                     name=dataset["name"],
-                    dataset_description={key: str(value) for key, value in dataset["dataset_description"].items()},
+                    metadata={key: str(value) for key, value in dataset["dataset_description"].items()},
                     derivative_dataset_id=derivative_dataset["_id"],
                 )
             )
