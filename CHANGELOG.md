@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-08-14)
+
+### Bug Fixes
+
+- **save annotations**: Fix annotation naming issue
+  ([`59c6f7b`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/59c6f7b0e871745271523069bd8a1194205268ce))
+
+### Chores
+
+- **refactor**: Split viewer and portal for future browser UI
+  ([`90a182b`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/90a182b637c5a32360ff56526abc0f1de916f9d3))
+
+### Features
+
+- **ui**: Browser as a full page, add breadcrumbs to navigate
+  ([`6ca3cd5`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/6ca3cd581160f7b626927c07a7c0e99040bf29de))
+
+- **utils**: Add utils folder with base logic and base ui
+  ([`4b6d00f`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/4b6d00f679d005e6c0df810f7dd3e97829ef7fdc))
+
+
 ## v1.4.0 (2026-08-12)
 
 ### Features
