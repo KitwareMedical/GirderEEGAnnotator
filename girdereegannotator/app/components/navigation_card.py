@@ -31,8 +31,9 @@ class NavigationCard(v3.VCard):
             with v3.VCardItem(classes="nav-bar"):
                 self.portal_breadcrumbs = Div(classes="portal-breadcrumbs")
                 self.annotator_toolbar = Div(
-                    v_if=self._is_navigation_window(nav_state, NavigationWindow.ANNOTATOR), classes="annotator-toolbar"
+                    v_if=self._is_navigation_window(nav_state, NavigationWindow.ANNOTATOR),
                 )
+                self.portal_toolbar = Div(v_else_if=self._is_navigation_window(nav_state, NavigationWindow.PORTAL))
 
             with (
                 v3.VCardText(classes="nav-content"),

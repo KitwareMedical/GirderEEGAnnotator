@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
+from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
@@ -29,6 +30,8 @@ class PortalPagination(html.Div):
 
 
 class PortalUI(html.Div, BaseUI[PortalState]):
+    refresh_clicked = Signal()
+
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="portal", **kwargs)
         self._init_typed_state(self.state, PortalState)
@@ -49,4 +52,12 @@ class PortalUI(html.Div, BaseUI[PortalState]):
             dataset_state=self.get_sub_state(self.name.current_dataset),
             eeg_fileset_state=self.get_sub_state(self.name.current_eeg_fileset),
             **kwargs,
+        )
+
+    def build_toolbar(self) -> None:
+        v3.VBtn(
+            v_if=f"!{self.name.current_eeg_fileset.name}",
+            click=self.refresh_clicked,
+            icon="mdi-refresh",
+            variant="text",
         )

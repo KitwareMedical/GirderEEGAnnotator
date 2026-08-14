@@ -41,6 +41,12 @@ class PortalLogic(BaseLogic[PortalState]):
         self._refresh_eeg_list()
         self.eeg_fileset_unselected()
 
+    def _on_refresh_clicked(self) -> None:
+        if self.current_dataset.data._id is None:
+            self._refresh_dataset_list()
+        else:
+            self._refresh_eeg_list()
+
     def _on_breadcrumbs_clicked(self, breadcrumbs_element: BreadcrumbsElement) -> None:
         if breadcrumbs_element == BreadcrumbsElement.ROOT:
             self.reset_dataset()
@@ -77,6 +83,7 @@ class PortalLogic(BaseLogic[PortalState]):
         ]
 
     def set_ui(self, ui: PortalUI) -> None:
+        ui.refresh_clicked.connect(self._on_refresh_clicked)
         ui.breadcrumbs_ui.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)

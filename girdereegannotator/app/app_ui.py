@@ -61,7 +61,8 @@ class AnnotatorAppUI:
                 ".metadata-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
                 ".metadata-item { width: 50%; }"
                 ".metadata-list { display: flex; flex-wrap: wrap; }"
-                ".nav-bar { display: flex; justify-content: space-between; height: 65px; }"
+                ".nav-bar { height: 65px; }"
+                ".nav-bar .v-card-item__content { display: flex; align-items: center; justify-content: space-between; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
                 ".portal { padding-left: 20px; padding-right: 20px; display: flex; flex-direction: column; height: 100%}"
@@ -79,6 +80,9 @@ class AnnotatorAppUI:
 
             with self.navigation.portal_breadcrumbs:
                 self.portal_ui.build_breadcrumbs()
+
+            with self.navigation.portal_toolbar:
+                self.portal_ui.build_toolbar()
 
             with self.navigation.annotator:
                 self.eeg_annotator_ui = EGGAnnotatorUI()
