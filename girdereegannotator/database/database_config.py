@@ -1,15 +1,7 @@
-from pathlib import Path
 from typing import Any
-
-from yaml import safe_load
 
 from .girder import GirderDatabase
 from .interface_database import DatabaseInterface
-
-
-def load_config(path: str) -> Any:
-    with Path(path).open() as f:
-        return safe_load(f)
 
 
 def get_interface(config: dict[str, Any]) -> DatabaseInterface:
@@ -21,7 +13,9 @@ def get_interface(config: dict[str, Any]) -> DatabaseInterface:
     ptype = backend.get("type")
     if ptype == "girder":
         return GirderDatabase(
-            collection_id=backend.get("collection_id"), api_url=backend.get("api_url"), api_key=backend.get("api_key")
+            collection_id=backend.get("collection_id"),
+            api_url=backend.get("api_url"),
+            api_key=backend.get("api_key"),
         )
 
     raise ValueError("The backend type is undefined or unknown.")

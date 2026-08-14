@@ -36,6 +36,10 @@ class GirderBIDSHandler:
         self.suffix = BIDSSuffix()
         self.ext = BIDSExtension()
 
+    @staticmethod
+    def _extract_file_base_name(filename: str, suffix: str, extension: str) -> str:
+        return filename.removesuffix(extension).removesuffix(suffix)
+
     def _load_asset_from_file(self, file: EEGMediaFile) -> GirderModel | None:
         assets = self.girder_client.listFile(itemId=file._id)
         return next(assets, None)
@@ -62,8 +66,8 @@ class GirderBIDSHandler:
             parameters={
                 "dataset_id": eeg_media.upload_dataset_id,
                 "source_id": eeg_media.raw_eeg._id,
-                "suffix": self.suffix.eeg,
-                "extension": self.ext.eeg.strip("."),
+                "suffix": self.suffix.eeg.removeprefix("_"),
+                "extension": self.ext.eeg.removeprefix("."),
                 "limit": 1,
             },
         )
@@ -80,8 +84,8 @@ class GirderBIDSHandler:
             parameters={
                 "dataset_id": eeg_media.upload_dataset_id,
                 "source_id": eeg_media.eeg._id,
-                "suffix": self.suffix.annotation,
-                "extension": self.ext.annotation.strip("."),
+                "suffix": self.suffix.annotation.removeprefix("_"),
+                "extension": self.ext.annotation.removeprefix("."),
                 "limit": 0,
             },
         )
@@ -111,7 +115,8 @@ class GirderBIDSHandler:
             temp_dir_path = Path(temp_dir)
             raw_eeg_path = temp_dir_path / eeg_media.raw_eeg.name
             eeg_desc = "desc-filtered"
-            eeg_path = temp_dir_path / eeg_media.raw_eeg.name.replace(self.suffix.eeg, f"{eeg_desc}_{self.suffix.eeg}")
+            base_name = self._extract_file_base_name(eeg_media.raw_eeg.name, self.suffix.eeg, self.ext.eeg)
+            eeg_path = temp_dir_path / f"{base_name}_{eeg_desc}{self.suffix.eeg}{self.ext.eeg}"
 
             self.download_file(eeg_media.raw_eeg, raw_eeg_path)
 
@@ -152,8 +157,9 @@ class GirderBIDSHandler:
         while next_number in used_numbers:
             next_number += 1
 
+        base_name = eeg_media.name.removesuffix(self.ext.eeg).removesuffix(self.suffix.eeg)
         annotation_desc = f"desc-annotation{next_number}"
-        return f"{eeg_media.name}_{annotation_desc}_{self.suffix.annotation}{self.ext.annotation}"
+        return f"{base_name}_{annotation_desc}{self.suffix.annotation}{self.ext.annotation}"
 
     def get_eeg_media_files(self, eeg_media: EEGMedia, compute: bool = False) -> None:
         if compute and eeg_media.upload_folder_id is None:
@@ -175,8 +181,8 @@ class GirderBIDSHandler:
             self.resource.file,
             parameters={
                 "dataset_id": dataset._id,
-                "suffix": self.suffix.eeg,
-                "extension": self.ext.eeg.strip("."),
+                "suffix": self.suffix.eeg.removeprefix("_"),
+                "extension": self.ext.eeg.removeprefix("."),
                 "limit": limit,
                 "offset": offset,
             },

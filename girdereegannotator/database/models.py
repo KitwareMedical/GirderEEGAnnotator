@@ -7,8 +7,8 @@ GirderParams = dict[str, Any]
 
 @dataclass
 class BIDSSuffix:
-    eeg: str = "eeg"
-    annotation: str = "events"
+    eeg: str = "_eeg"
+    annotation: str = "_events"
 
 
 @dataclass

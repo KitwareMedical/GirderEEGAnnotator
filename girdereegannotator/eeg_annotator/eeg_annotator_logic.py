@@ -28,8 +28,11 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         self._viewer_logic.load_eeg_media_files(self.data.eeg_media)
 
     def _save_annotations(self) -> None:
-        self._viewer_logic.save_annotations(self.data.eeg_media)
-        self.eeg_media_updated(self.data.eeg_media)
+        eeg_media = self.eeg_media.get_dataclass()
+        self._viewer_logic.save_annotations(eeg_media)
+
+        self.eeg_media.set_dataclass(eeg_media)
+        self.eeg_media_updated(eeg_media)
 
     def reset_state(self) -> None:
         super().reset_state()
