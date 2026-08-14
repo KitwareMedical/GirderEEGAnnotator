@@ -1,17 +1,15 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import EEGFileset
 
-from .expandable_list import ExpandableList
+from .expandable_list import ExpandableList, ExpandableListState
 
 
 @dataclass
-class EEGFilesetListState:
-    current_index: int | None = None
-    items: list[EEGFileset] = field(default_factory=list)
+class EEGFilesetListState(ExpandableListState[EEGFileset]): ...
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):

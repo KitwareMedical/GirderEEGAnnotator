@@ -1,16 +1,14 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import BIDSDataset
 
-from .expandable_list import ExpandableList
+from .expandable_list import ExpandableList, ExpandableListState
 
 
 @dataclass
-class DatasetListState:
-    current_index: int | None = None
-    items: list[BIDSDataset] = field(default_factory=list)
+class DatasetListState(ExpandableListState[BIDSDataset]): ...
 
 
 class DatasetList(ExpandableList[DatasetListState, BIDSDataset]):
