@@ -6,6 +6,7 @@ from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
+from girdereegannotator.utils.components import Button
 
 from .components.breadcrumbs import Breadcrumbs
 from .components.dataset_list import DatasetList, DatasetListState
@@ -25,8 +26,8 @@ class PortalPagination(html.Div):
         super().__init__(classes="portal-pagination", **kwargs)
 
         with self:
-            v3.VBtn(icon="mdi-chevron-left", variant="text")
-            v3.VBtn(icon="mdi-chevron-right", variant="text")
+            Button(icon="mdi-chevron-left")
+            Button(icon="mdi-chevron-right")
 
 
 class PortalUI(html.Div, BaseUI[PortalState]):
@@ -55,9 +56,9 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         )
 
     def build_toolbar(self) -> None:
-        v3.VBtn(
+        Button(
             v_if=f"!{self.name.current_eeg_fileset.name}",
             click=self.refresh_clicked,
             icon="mdi-refresh",
-            variant="text",
+            tooltip="Refresh list",
         )

@@ -6,6 +6,7 @@ from undo_stack import Signal
 
 from girdereegannotator.database.models import EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
+from girdereegannotator.utils.components import Button
 
 from .components.shortcuts_panel import ShortcutsPanel
 from .eeg_viewer_ui import EEGViewerUI
@@ -29,15 +30,17 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
             self.viewer_ui = EEGViewerUI(style="height: calc(100% - 50px);")
 
             with html.Div(classes="d-flex align-center justify-center", style="height: 50px;", **kwargs):
-                self._build_icon_button(
+                Button(
                     click=self.previous_clicked,
                     icon="mdi-chevron-left",
                     tooltip="Previous EEG",
+                    tooltip_location="bottom start",
                 )
-                self._build_icon_button(
+                Button(
                     click=self.next_clicked,
                     icon="mdi-chevron-right",
                     tooltip="Next EEG",
+                    tooltip_location="bottom start",
                 )
                 v3.VSpacer()
 
@@ -46,20 +49,10 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                 )
 
                 v3.VSpacer()
-                self._build_icon_button(
+                Button(
                     icon="mdi-content-save-outline",
                     click=self.save_annotations_clicked,
                     tooltip="Save annotations",
+                    tooltip_location="bottom start",
                 )
                 ShortcutsPanel()
-
-    def _build_icon_button(self, icon: str, tooltip: str | None = None, **kwargs) -> None:
-        with v3.VBtn(icon=icon, variant="text", **kwargs):
-            if tooltip is not None:
-                v3.VTooltip(
-                    text=tooltip,
-                    activator="parent",
-                    transition="slide-y-transition",
-                    location="bottom start",
-                )
-            v3.VIcon(icon=icon)

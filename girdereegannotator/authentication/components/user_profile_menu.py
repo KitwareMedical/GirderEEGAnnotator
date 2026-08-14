@@ -1,9 +1,9 @@
-from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import User
+from girdereegannotator.utils.components import Button
 
 
 class UserProfileMenu(v3.VMenu):
@@ -18,14 +18,11 @@ class UserProfileMenu(v3.VMenu):
             **kwargs,
         )
         with self:
-            with (
-                v3.Template(v_slot_activator="{ props : activatorProps }"),
-                v3.VBtn(v_bind="activatorProps", icon=True, variant="text"),
-                v3.VAvatar(),
-            ):
-                html.Span(
-                    f"{{{{ {user_state.name.first_name}.charAt(0) }}}}{{{{ {user_state.name.last_name}.charAt(0) }}}}",
-                    classes="text-uppercase",
+            with v3.Template(v_slot_activator="{ props : activatorProps }"):
+                Button(
+                    v_bind="activatorProps",
+                    avatar_text=f"{{{{ {user_state.name.first_name}.charAt(0) }}}}{{{{ {user_state.name.last_name}.charAt(0) }}}}",
+                    text_transform="uppercase",
                 )
 
             with (
@@ -35,10 +32,9 @@ class UserProfileMenu(v3.VMenu):
                 ),
                 v3.VCardActions(),
             ):
-                v3.VBtn(
+                Button(
                     text="Log Out",
                     block=True,
                     click=self.logout_clicked,
                     color="error",
-                    variant="flat",
                 )
