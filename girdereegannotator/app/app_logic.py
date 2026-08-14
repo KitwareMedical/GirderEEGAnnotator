@@ -1,6 +1,6 @@
 from trame_server.core import Server
 
-from girdereegannotator.database.models import EEGMedia
+from girdereegannotator.database.models import EEGFileset
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from ..authentication import AuthenticationLogic
@@ -20,9 +20,9 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
 
         self._eeg_annotator_logic.next_clicked.connect(self._portal_logic.select_next_eeg)
         self._eeg_annotator_logic.previous_clicked.connect(self._portal_logic.select_previous_eeg)
-        self._eeg_annotator_logic.eeg_media_updated.connect(self._portal_logic.update_eeg_media_list)
+        self._eeg_annotator_logic.eeg_fileset_updated.connect(self._portal_logic.update_eeg_fileset_list)
 
-        self._portal_logic.eeg_media_selected.connect(self._on_eeg_media_selected)
+        self._portal_logic.eeg_fileset_selected.connect(self._on_eeg_fileset_selected)
         self._portal_logic.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
 
         self._auth_logic.user_connected.connect(self._on_user_connected)
@@ -33,9 +33,9 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
 
         self.data.nav_state.window = NavigationWindow.BROWSER if is_connected else NavigationWindow.UNDEFINED
 
-    def _on_eeg_media_selected(self, eeg_media: EEGMedia | None) -> None:
-        self._eeg_annotator_logic.load_eeg_media(eeg_media)
-        if eeg_media is not None:
+    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset | None) -> None:
+        self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset)
+        if eeg_fileset is not None:
             self.data.nav_state.window = NavigationWindow.ANNOTATOR
 
     def _on_breadcrumbs_clicked(self) -> None:

@@ -5,7 +5,7 @@ from pathlib import Path
 from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 
-from girdereegannotator.database.models import Asset, BIDSExtension, EEGMedia
+from girdereegannotator.database.models import Asset, BIDSExtension, EEGFileset
 from girdereegannotator.utils.async_tracker import AsyncTracker, create_async_task
 from girdereegannotator.utils.base_logic import BaseLogic
 
@@ -56,15 +56,15 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.rca_view.set_files(file_path, annotation_file_path)
         self.view_handler.update_size(None, self.rca_view.window_size)
 
-    def _load_eeg_media_files(self, eeg_media: EEGMedia) -> None:
+    def _load_eeg_files(self, eeg_fileset: EEGFileset) -> None:
         self._create_tmp_dir()
 
-        eeg_media_files: tuple[Asset, Asset] = self.ctrl.download_eeg_media_files(
-            eeg_media,
+        eeg_files: tuple[Asset, Asset] = self.ctrl.download_eeg_files(
+            eeg_fileset,
             self._current_tmpdir.name,
-            annotation_file=eeg_media.annotations[0] if eeg_media.annotations else None,
+            annotation_file=eeg_fileset.annotations[0] if eeg_fileset.annotations else None,
         )
-        eeg_file, annotation_file = eeg_media_files
+        eeg_file, annotation_file = eeg_files
 
         if not is_eeg_file(eeg_file):
             raise FileValidationError(f"EEG file {eeg_file.name} is invalid")
@@ -80,10 +80,10 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         except Exception as e:
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
-    def load_eeg_media_files(self, eeg_media: EEGMedia) -> None:
+    def load_eeg_files(self, eeg_fileset: EEGFileset) -> None:
         def _load() -> None:
             try:
-                self._load_eeg_media_files(eeg_media)
+                self._load_eeg_files(eeg_fileset)
                 self.data.load_status = LoadStatus.LOADED
 
             except (FileValidationError, AnnotatorLoadingError) as e:
@@ -97,7 +97,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             self.task.cancel()
         self.task = create_async_task(self.load_tracker, _load)
 
-    def save_annotations(self, eeg_media: EEGMedia) -> None:
+    def save_annotations(self, eeg_fileset: EEGFileset) -> None:
         if self._current_tmpdir is None:
             raise RuntimeError("Temporary directory is not initialized")
 
@@ -106,5 +106,5 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         if annotation_file.path is None or not Path(annotation_file.path).exists():
             raise FileNotFoundError(f"Annotation file ({annotation_file.path}) does not exist")
 
-        annotation_file = self.ctrl.save_annotations(eeg_media, annotation_file)
-        eeg_media.annotations.append(annotation_file)
+        annotation_file = self.ctrl.save_annotations(eeg_fileset, annotation_file)
+        eeg_fileset.annotations.append(annotation_file)

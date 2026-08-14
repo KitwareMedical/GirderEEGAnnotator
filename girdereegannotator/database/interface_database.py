@@ -3,7 +3,7 @@ from inspect import getmembers, isfunction
 
 from trame_server.controller import Controller
 
-from .models import AnnotationFile, Asset, BIDSDataset, EEGMedia, User
+from .models import AnnotationFile, Asset, BIDSDataset, EEGFileset, User
 
 
 class DatabaseInterface(ABC):
@@ -24,21 +24,23 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    def list_eeg_media(self, dataset: BIDSDataset, limit: int, offset: int, sort: str, sort_dir: int) -> list[EEGMedia]:
+    def list_eeg_filesets(
+        self, dataset: BIDSDataset, limit: int, offset: int, sort: str, sort_dir: int
+    ) -> list[EEGFileset]:
         pass
 
     @abstractmethod
-    def download_eeg_media_files(
+    def download_eeg_files(
         self,
         dataset: BIDSDataset,
-        eeg_media: EEGMedia,
+        eeg_fileset: EEGFileset,
         download_dir: str,
         annotation_file: AnnotationFile | None = None,
     ) -> tuple[Asset, Asset]:
         pass
 
     @abstractmethod
-    def save_annotations(self, eeg_media: EEGMedia, eeg_annotation_file: AnnotationFile) -> AnnotationFile:
+    def save_annotations(self, eeg_fileset: EEGFileset, eeg_annotation_file: AnnotationFile) -> AnnotationFile:
         pass
 
 
