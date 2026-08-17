@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from trame.widgets import html
@@ -14,35 +13,29 @@ class BreadcrumbsElement(Enum):
     DATASET = auto()
 
 
-@dataclass
-class BreadcrumbsState:
-    dataset: BIDSDataset = field(default_factory=BIDSDataset)
-    eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
-
-
 class Breadcrumbs(html.Div):
     breadcrumbs_clicked = Signal(BreadcrumbsElement)
 
-    def __init__(self, breadcrumbs_state: TypedState[BreadcrumbsState], **kwargs):
+    def __init__(self, dataset_state: TypedState[BIDSDataset], eeg_fileset_state: TypedState[EEGFileset], **kwargs):
         super().__init__(classes="button-bar", **kwargs)
 
         with self:
             self._build_breadcrumbs_button(
-                active=f"!{breadcrumbs_state.name.dataset.name}",
+                active=f"!{dataset_state.name.name}",
                 click=(lambda: self.breadcrumbs_clicked(BreadcrumbsElement.ROOT)),
                 icon="mdi-home",
             )
-            v3.VIcon(v_if=breadcrumbs_state.name.dataset.name, disabled=True, icon="mdi-chevron-right")
+            v3.VIcon(v_if=dataset_state.name.name, disabled=True, icon="mdi-chevron-right")
             self._build_breadcrumbs_button(
-                v_if=breadcrumbs_state.name.dataset.name,
-                active=f"!{breadcrumbs_state.name.eeg_fileset.name}",
+                v_if=dataset_state.name.name,
+                active=f"!{eeg_fileset_state.name.name}",
                 click=(lambda: self.breadcrumbs_clicked(BreadcrumbsElement.DATASET)),
-                text=(breadcrumbs_state.name.dataset.name,),
+                text=(dataset_state.name.name,),
             )
-            v3.VIcon(v_if=breadcrumbs_state.name.eeg_fileset.name, disabled=True, icon="mdi-chevron-right")
+            v3.VIcon(v_if=eeg_fileset_state.name.name, disabled=True, icon="mdi-chevron-right")
             self._build_breadcrumbs_button(
-                v_if=breadcrumbs_state.name.eeg_fileset.name,
-                text=(breadcrumbs_state.name.eeg_fileset.name,),
+                v_if=eeg_fileset_state.name.name,
+                text=(eeg_fileset_state.name.name,),
             )
 
     def _build_breadcrumbs_button(self, active: str | bool = True, **kwargs) -> None:

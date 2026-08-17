@@ -3,16 +3,18 @@ from dataclasses import dataclass, field
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 
+from girdereegannotator.database.models import BIDSDataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
 
-from .components.breadcrumbs import Breadcrumbs, BreadcrumbsState
+from .components.breadcrumbs import Breadcrumbs
 from .components.dataset_list import DatasetList, DatasetListState
 from .components.eeg_fileset_list import EEGFilesetList, EEGFilesetListState
 
 
 @dataclass
 class PortalState:
-    breadcrumbs_state: BreadcrumbsState = field(default_factory=BreadcrumbsState)
+    current_dataset: BIDSDataset = field(default_factory=BIDSDataset)
+    current_eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
     dataset_list_state: DatasetListState = field(default_factory=DatasetListState)
     eeg_fileset_list_state: EEGFilesetListState = field(default_factory=EEGFilesetListState)
 
@@ -33,14 +35,18 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         with self:
             with v3.VFadeTransition(mode="out-in"):
                 self.dataset_list = DatasetList(
-                    v_if=f"!{self.name.breadcrumbs_state.dataset.name}",
+                    v_if=f"!{self.name.current_dataset.name}",
                     list_state=self.get_sub_state(self.name.dataset_list_state),
                 )
                 self.eeg_fileset_list = EEGFilesetList(
-                    v_else_if=f"!{self.name.breadcrumbs_state.eeg_fileset.name}",
+                    v_else_if=f"!{self.name.current_eeg_fileset.name}",
                     list_state=self.get_sub_state(self.name.eeg_fileset_list_state),
                 )
             PortalPagination()
 
     def build_breadcrumbs(self, **kwargs) -> None:
-        self.breadcrumbs_ui = Breadcrumbs(self.get_sub_state(self.name.breadcrumbs_state), **kwargs)
+        self.breadcrumbs_ui = Breadcrumbs(
+            dataset_state=self.get_sub_state(self.name.current_dataset),
+            eeg_fileset_state=self.get_sub_state(self.name.current_eeg_fileset),
+            **kwargs,
+        )

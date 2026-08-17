@@ -34,14 +34,14 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
             self._portal_logic.reset_state()
         self._eeg_annotator_logic.reset_state()
 
-        self.data.nav_state.window = NavigationWindow.BROWSER if is_connected else NavigationWindow.UNDEFINED
+        self.data.nav_state.window = NavigationWindow.PORTAL if is_connected else NavigationWindow.UNDEFINED
 
-    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset | None) -> None:
+    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset)
         self.data.nav_state.window = NavigationWindow.ANNOTATOR
 
     def _on_eeg_fileset_unselected(self) -> None:
-        self.data.nav_state.window = NavigationWindow.BROWSER
+        self.data.nav_state.window = NavigationWindow.PORTAL
 
     def set_ui(self, ui: AnnotatorAppUI) -> None:
         self._eeg_annotator_logic.set_ui(ui.eeg_annotator_ui)

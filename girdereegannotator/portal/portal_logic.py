@@ -15,8 +15,8 @@ class PortalLogic(BaseLogic[PortalState]):
 
     def __init__(self, server: Server) -> None:
         super().__init__(server, PortalState)
-        self.current_dataset = self.get_sub_state(self.name.breadcrumbs_state.dataset)
-        self.current_eeg_fileset = self.get_sub_state(self.name.breadcrumbs_state.eeg_fileset)
+        self.current_dataset = self.get_sub_state(self.name.current_dataset)
+        self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
 
     def _refresh_dataset_list(self) -> None:
         self.data.dataset_list_state.items = self.server.controller.list_datasets()
