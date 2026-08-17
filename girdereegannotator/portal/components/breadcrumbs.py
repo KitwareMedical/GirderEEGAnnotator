@@ -1,41 +1,41 @@
-from dataclasses import dataclass
+from enum import Enum, auto
 
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
+from girdereegannotator.database.models import BIDSDataset, EEGFileset
 
-@dataclass
-class BreadcrumbsState:
-    dataset_name: str | None = None
-    eeg_name: str | None = None
+
+class BreadcrumbsElement(Enum):
+    ROOT = auto()
+    DATASET = auto()
 
 
 class Breadcrumbs(html.Div):
-    root_clicked = Signal()
-    dataset_clicked = Signal()
+    breadcrumbs_clicked = Signal(BreadcrumbsElement)
 
-    def __init__(self, breadcrumbs_state: TypedState[BreadcrumbsState], **kwargs):
-        super().__init__(classes="d-flex align-center", style="gap: 8px", **kwargs)
+    def __init__(self, dataset_state: TypedState[BIDSDataset], eeg_fileset_state: TypedState[EEGFileset], **kwargs):
+        super().__init__(classes="button-bar", **kwargs)
 
         with self:
             self._build_breadcrumbs_button(
-                active=f"!{breadcrumbs_state.name.dataset_name}",
-                click=self.root_clicked,
+                active=f"!{dataset_state.name.name}",
+                click=(lambda: self.breadcrumbs_clicked(BreadcrumbsElement.ROOT)),
                 icon="mdi-home",
             )
-            v3.VIcon(v_if=breadcrumbs_state.name.dataset_name, disabled=True, icon="mdi-chevron-right")
+            v3.VIcon(v_if=dataset_state.name.name, disabled=True, icon="mdi-chevron-right")
             self._build_breadcrumbs_button(
-                v_if=breadcrumbs_state.name.dataset_name,
-                active=f"!{breadcrumbs_state.name.eeg_name}",
-                click=self.dataset_clicked,
-                text=(breadcrumbs_state.name.dataset_name,),
+                v_if=dataset_state.name.name,
+                active=f"!{eeg_fileset_state.name.name}",
+                click=(lambda: self.breadcrumbs_clicked(BreadcrumbsElement.DATASET)),
+                text=(dataset_state.name.name,),
             )
-            v3.VIcon(v_if=breadcrumbs_state.name.eeg_name, disabled=True, icon="mdi-chevron-right")
+            v3.VIcon(v_if=eeg_fileset_state.name.name, disabled=True, icon="mdi-chevron-right")
             self._build_breadcrumbs_button(
-                v_if=breadcrumbs_state.name.eeg_name,
-                text=(breadcrumbs_state.name.eeg_name,),
+                v_if=eeg_fileset_state.name.name,
+                text=(eeg_fileset_state.name.name,),
             )
 
     def _build_breadcrumbs_button(self, active: str | bool = True, **kwargs) -> None:
@@ -44,7 +44,7 @@ class Breadcrumbs(html.Div):
         active = (active,)
 
         v3.VBtn(
-            classes="pa-0",
+            classes="breadcrumbs-button",
             variant="plain",
             density="compact",
             readonly=active,

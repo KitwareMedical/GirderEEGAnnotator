@@ -33,7 +33,7 @@ class ShortcutInfo(Div):
         super().__init__(classes="d-flex justify-space-between pa-2", **kwargs)
         with self:
             Span(desc, classes="text-body-2")
-            with Div(classes="d-flex", style="gap: 8px;"):
+            with Div(classes="button-bar"):
                 for icon in icons:
                     v3.VIcon(icon=f"mdi-{icon}")
 

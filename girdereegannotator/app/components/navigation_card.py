@@ -8,7 +8,7 @@ from trame_server.utils.typed_state import TypedState
 
 class NavigationWindow(Enum):
     UNDEFINED = auto()
-    BROWSER = auto()
+    PORTAL = auto()
     ANNOTATOR = auto()
 
 
@@ -38,7 +38,7 @@ class NavigationCard(v3.VCard):
                 v3.VCardText(classes="nav-content"),
                 v3.VWindow(v_model=(nav_state.name.window,), classes="fill-height", style="overflow: unset;"),
             ):
-                self.portal = v3.VWindowItem(classes="nav-window", value=(NavigationWindow.BROWSER.value,))
+                self.portal = v3.VWindowItem(classes="nav-window", value=(NavigationWindow.PORTAL.value,))
                 self.annotator = v3.VWindowItem(
                     classes="nav-window annotator-window", value=(NavigationWindow.ANNOTATOR.value,)
                 )
