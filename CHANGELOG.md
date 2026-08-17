@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-08-17)
+
+### Chores
+
+- Remove useless BreadcrumbsState
+  ([`ab415be`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/ab415be678bc787034551ce2381066bc35550cb0))
+
+- Rename EEG Media to EEG Fileset
+  ([`63bc3d6`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/63bc3d6a1e69fc8df016717a304cfb37695da4ef))
+
+- **check authentication**: Need to be authenticated to list datasets and eegto prevent girder error
+  ([`f6d15af`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/f6d15afa729bf7925f2593c5c915baa3cb8e2039))
+
+### Features
+
+- **expanding list**: Expand list items on click
+  ([`e88f3f6`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/e88f3f608c950b1612fde4d963c3b58db60f86d2))
+
+- **metadata**: Add metadata in expansion panels
+  ([`c9cbc82`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/c9cbc8238cf0a148e956cbfd0b2d572b37c73de5))
+
+
 ## v1.5.0 (2026-08-14)
 
 ### Bug Fixes
