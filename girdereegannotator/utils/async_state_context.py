@@ -6,7 +6,7 @@ from trame_server import Server
 from trame_server.utils.asynchronous import create_task
 
 
-class AsyncTracker:
+class AsyncStateContext:
     def __init__(
         self,
         server: Server,
@@ -24,7 +24,7 @@ class AsyncTracker:
 
 
 def create_async_task(
-    tracker: AsyncTracker,
+    tracker: AsyncStateContext,
     callable_method: Callable[..., None],
     *args,
 ) -> Task:

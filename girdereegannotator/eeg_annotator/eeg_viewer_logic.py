@@ -6,11 +6,11 @@ from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 
 from girdereegannotator.database.models import Asset, BIDSExtension, EEGFileset
-from girdereegannotator.utils.async_tracker import AsyncTracker, create_async_task
 from girdereegannotator.utils.base_logic import BaseLogic
+from girdereegannotator.utils.load_status import LoadStatus
 
 from .components import RCAView
-from .eeg_viewer_ui import EEGViewerState, EEGViewerUI, LoadStatus
+from .eeg_viewer_ui import EEGViewerState, EEGViewerUI
 
 
 class FileValidationError(Exception):
@@ -37,8 +37,6 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.rca_view = RCAView()
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
         self.task: Task | None = None
-
-        self.load_tracker = AsyncTracker(server)
 
     def set_ui(self, ui: EEGViewerUI) -> None:
         self.view_handler = ui.rca.create_view_handler(self.rca_view)
@@ -95,7 +93,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.data.load_status = LoadStatus.LOADING
         if self.task and not self.task.done():
             self.task.cancel()
-        self.task = create_async_task(self.load_tracker, _load)
+        self.task = self.create_async_task(_load)
 
     def save_annotations(self, eeg_fileset: EEGFileset) -> None:
         if self._current_tmpdir is None:

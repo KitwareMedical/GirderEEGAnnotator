@@ -1,8 +1,13 @@
+from asyncio import Task
+from collections.abc import Callable
+
 from trame_server import Server
 from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
+from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.utils.base_logic import BaseLogic
+from girdereegannotator.utils.load_status import LoadStatus
 
 from .components.breadcrumbs import BreadcrumbsElement
 from .portal_ui import PortalState, PortalUI
@@ -18,8 +23,37 @@ class PortalLogic(BaseLogic[PortalState]):
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
 
+        self.task: Task | None = None
+
+    def _refresh_list(
+        self,
+        list_state: ExpandableListState,
+        load_callable: Callable[[], list],
+        *args,
+    ) -> None:
+        list_state.items = []
+        list_state.current_index = None
+        self.data.load_status = LoadStatus.LOADING
+
+        if self.task and not self.task.done():
+            self.task.cancel()
+
+        def _refresh() -> None:
+            try:
+                list_state.items = load_callable(*args)
+                self.data.load_status = LoadStatus.LOADED
+
+            except Exception as e:
+                self.data.load_status = LoadStatus.ERROR
+                self.data.status_message = str(e)
+
+        self.task = self.create_async_task(_refresh)
+
     def _refresh_dataset_list(self) -> None:
-        self.data.dataset_list_state.items = self.server.controller.list_datasets()
+        self._refresh_list(
+            self.data.dataset_list_state,
+            self.server.controller.list_datasets,
+        )
 
     def _refresh_eeg_list(self) -> None:
         if self.current_dataset.data._id is None:
@@ -27,8 +61,10 @@ class PortalLogic(BaseLogic[PortalState]):
             self.data.eeg_fileset_list_state.current_index = None
             return
 
-        self.data.eeg_fileset_list_state.items = self.server.controller.list_eeg_filesets(
-            self.current_dataset.get_dataclass()
+        self._refresh_list(
+            self.data.eeg_fileset_list_state,
+            self.server.controller.list_eeg_filesets,
+            self.current_dataset.get_dataclass(),
         )
 
     def reset_dataset(self) -> None:
