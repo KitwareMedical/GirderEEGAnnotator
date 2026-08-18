@@ -28,15 +28,6 @@ class PortalState:
     eeg_fileset_list_state: EEGFilesetListState = field(default_factory=EEGFilesetListState)
 
 
-class PortalPagination(html.Div):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(classes="portal-pagination", **kwargs)
-
-        with self:
-            Button(icon="mdi-chevron-left")
-            Button(icon="mdi-chevron-right")
-
-
 class PortalUI(html.Div, BaseUI[PortalState]):
     refresh_clicked = Signal()
 
@@ -44,22 +35,20 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         super().__init__(classes="portal", **kwargs)
         self._init_typed_state(self.state, PortalState)
         with self:
+            LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
             with v3.VFadeTransition(mode="out-in"):
-                LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
                 LoadErrorMessage(
-                    v_else_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
+                    v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
                     status_message=self.name.status_message,
                 )
                 self.dataset_list = DatasetList(
-                    v_else_if=f"!{self.name.current_dataset.name}",
+                    v_else_if=f"{self.name.dataset_list_state.items}.length && !{self.name.current_dataset.name}",
                     list_state=self.get_sub_state(self.name.dataset_list_state),
                 )
                 self.eeg_fileset_list = EEGFilesetList(
-                    v_else_if=f"!{self.name.current_eeg_fileset.name}",
+                    v_else_if=f"{self.name.eeg_fileset_list_state.items}.length && !{self.name.current_eeg_fileset.name}",
                     list_state=self.get_sub_state(self.name.eeg_fileset_list_state),
                 )
-            v3.VSpacer()
-            PortalPagination(v_if=self.is_load_status(LoadStatus.LOADED))
 
     def build_breadcrumbs(self, **kwargs) -> None:
         self.breadcrumbs_ui = Breadcrumbs(
@@ -72,6 +61,7 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         Button(
             v_if=f"!{self.name.current_eeg_fileset.name}",
             click=self.refresh_clicked,
+            disabled=(self.is_load_status(LoadStatus.LOADING),),
             icon="mdi-refresh",
             tooltip="Refresh list",
         )

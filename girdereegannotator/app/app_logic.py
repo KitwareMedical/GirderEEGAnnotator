@@ -26,15 +26,26 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self._portal_logic.eeg_fileset_selected.connect(self._on_eeg_fileset_selected)
 
         self._auth_logic.user_connected.connect(self._on_user_connected)
+        self._auth_logic.user_disconnected.connect(self._on_user_disconnected)
 
-    def _on_user_connected(self, is_connected: bool) -> None:
-        if is_connected:
-            self._portal_logic.reset_dataset()
-        else:
-            self._portal_logic.reset_state()
+        self.ctrl.on_client_connected.add(self._on_client_connected)
+
+    def _on_client_connected(self, **_kwargs) -> None:
+        if self.data.nav_state.window == NavigationWindow.UNDEFINED:
+            self._auth_logic.set_current_user()
+
+        elif self.data.nav_state.window == NavigationWindow.PORTAL:
+            self._portal_logic.refresh()
+        self.state.flush()
+
+    def _on_user_connected(self) -> None:
+        self._portal_logic.refresh()
+        self.data.nav_state.window = NavigationWindow.PORTAL
+
+    def _on_user_disconnected(self) -> None:
+        self._portal_logic.reset_state()
         self._eeg_annotator_logic.reset_state()
-
-        self.data.nav_state.window = NavigationWindow.PORTAL if is_connected else NavigationWindow.UNDEFINED
+        self.data.nav_state.window = NavigationWindow.UNDEFINED
 
     def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset)

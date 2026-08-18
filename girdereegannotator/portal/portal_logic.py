@@ -23,22 +23,18 @@ class PortalLogic(BaseLogic[PortalState]):
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
 
-        self.task: Task | None = None
-
     def _refresh_list(
         self,
         list_state: ExpandableListState,
         load_callable: Callable[[], list],
         *args,
-    ) -> None:
-        list_state.items = []
-        list_state.current_index = None
+    ) -> Task | None:
+        if self.data.load_status == LoadStatus.LOADING:
+            return None
+
         self.data.load_status = LoadStatus.LOADING
 
-        if self.task and not self.task.done():
-            self.task.cancel()
-
-        def _refresh() -> None:
+        async def _refresh() -> None:
             try:
                 list_state.items = load_callable(*args)
                 self.data.load_status = LoadStatus.LOADED
@@ -47,18 +43,22 @@ class PortalLogic(BaseLogic[PortalState]):
                 self.data.load_status = LoadStatus.ERROR
                 self.data.status_message = str(e)
 
-        self.task = self.create_async_task(_refresh)
+        return self.create_async_task(_refresh)
 
     def _refresh_dataset_list(self) -> None:
+        self.data.dataset_list_state.items = []
+        self.data.dataset_list_state.current_index = None
+
         self._refresh_list(
             self.data.dataset_list_state,
             self.server.controller.list_datasets,
         )
 
-    def _refresh_eeg_list(self) -> None:
+    def _refresh_eeg_fileset_list(self) -> None:
+        self.data.eeg_fileset_list_state.items = []
+        self.data.eeg_fileset_list_state.current_index = None
+
         if self.current_dataset.data._id is None:
-            self.data.eeg_fileset_list_state.items = []
-            self.data.eeg_fileset_list_state.current_index = None
             return
 
         self._refresh_list(
@@ -70,18 +70,11 @@ class PortalLogic(BaseLogic[PortalState]):
     def reset_dataset(self) -> None:
         self.current_dataset.set_dataclass(BIDSDataset())
         self._reset_eeg_fileset()
-        self._refresh_dataset_list()
+        self._refresh_eeg_fileset_list()
 
     def _reset_eeg_fileset(self) -> None:
         self.current_eeg_fileset.set_dataclass(EEGFileset())
-        self._refresh_eeg_list()
         self.eeg_fileset_unselected()
-
-    def _on_refresh_clicked(self) -> None:
-        if self.current_dataset.data._id is None:
-            self._refresh_dataset_list()
-        else:
-            self._refresh_eeg_list()
 
     def _on_breadcrumbs_clicked(self, breadcrumbs_element: BreadcrumbsElement) -> None:
         if breadcrumbs_element == BreadcrumbsElement.ROOT:
@@ -92,7 +85,7 @@ class PortalLogic(BaseLogic[PortalState]):
 
     def _on_dataset_selected(self, dataset: BIDSDataset) -> None:
         self.current_dataset.set_dataclass(dataset)
-        self._refresh_eeg_list()
+        self._refresh_eeg_fileset_list()
 
     def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self.current_eeg_fileset.set_dataclass(eeg_fileset)
@@ -118,8 +111,14 @@ class PortalLogic(BaseLogic[PortalState]):
             for (index, media) in enumerate(self.data.eeg_fileset_list_state.items)
         ]
 
+    def refresh(self) -> None:
+        if self.current_dataset.data._id is None:
+            self._refresh_dataset_list()
+        else:
+            self._refresh_eeg_fileset_list()
+
     def set_ui(self, ui: PortalUI) -> None:
-        ui.refresh_clicked.connect(self._on_refresh_clicked)
+        ui.refresh_clicked.connect(self.refresh)
         ui.breadcrumbs_ui.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)

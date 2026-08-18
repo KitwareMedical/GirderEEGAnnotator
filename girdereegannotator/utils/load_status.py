@@ -21,4 +21,4 @@ class LoadErrorMessage(Div):
 
 class LoadProgress(VProgressLinear):
     def __init__(self, **kwargs):
-        super().__init__(indeterminate=True, size=100, **kwargs)
+        super().__init__(classes="load-progress", indeterminate=True, size=100, variant="split", rounded=True, **kwargs)
