@@ -1,3 +1,4 @@
+import time
 from asyncio import Task
 from collections.abc import Callable
 
@@ -17,27 +18,35 @@ class PortalLogic(BaseLogic[PortalState]):
     eeg_fileset_selected = Signal(EEGFileset | None)
     eeg_fileset_unselected = Signal()
     select_eeg_fileset = Signal(int)
+    reset_dataset_scroll = Signal()
+    reset_eeg_fileset_scroll = Signal()
 
     def __init__(self, server: Server) -> None:
         super().__init__(server, PortalState)
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
 
+        self.limit = 15
+
     def _refresh_list(
         self,
         list_state: ExpandableListState,
         load_callable: Callable[[], list],
-        *args,
+        **kwargs,
     ) -> Task | None:
         if self.data.load_status == LoadStatus.LOADING:
             return None
 
         self.data.load_status = LoadStatus.LOADING
 
-        async def _refresh() -> None:
+        def _refresh() -> None:
             try:
-                list_state.items = load_callable(*args)
-                self.data.load_status = LoadStatus.LOADED
+                item_list = load_callable(offset=len(list_state.items), limit=self.limit, **kwargs)
+                list_state.can_load_more_items = len(item_list) == self.limit
+                list_state.items = list_state.items + item_list
+
+                self.data.load_status = LoadStatus.UNDEFINED
+                time.sleep(0.5)
 
             except Exception as e:
                 self.data.load_status = LoadStatus.ERROR
@@ -48,26 +57,33 @@ class PortalLogic(BaseLogic[PortalState]):
     def _refresh_dataset_list(self) -> None:
         self.data.dataset_list_state.items = []
         self.data.dataset_list_state.current_index = None
-
-        self._refresh_list(
-            self.data.dataset_list_state,
-            self.server.controller.list_datasets,
-        )
+        self.data.dataset_list_state.can_load_more_items = True
+        self.reset_dataset_scroll()
 
     def _refresh_eeg_fileset_list(self) -> None:
         self.data.eeg_fileset_list_state.items = []
         self.data.eeg_fileset_list_state.current_index = None
+        self.data.eeg_fileset_list_state.can_load_more_items = True
+        self.data.eeg_fileset_list_state.refresh = True
+        self.reset_eeg_fileset_scroll()
 
+    async def _load_more_datasets(self) -> None:
+        await self._refresh_list(
+            self.data.dataset_list_state,
+            self.server.controller.list_datasets,
+        )
+
+    async def _load_more_eeg_filesets(self) -> None:
         if self.current_dataset.data._id is None:
             return
 
-        self._refresh_list(
+        await self._refresh_list(
             self.data.eeg_fileset_list_state,
             self.server.controller.list_eeg_filesets,
-            self.current_dataset.get_dataclass(),
+            dataset=self.current_dataset.get_dataclass(),
         )
 
-    def reset_dataset(self) -> None:
+    def _reset_dataset(self) -> None:
         self.current_dataset.set_dataclass(BIDSDataset())
         self._reset_eeg_fileset()
         self._refresh_eeg_fileset_list()
@@ -78,14 +94,13 @@ class PortalLogic(BaseLogic[PortalState]):
 
     def _on_breadcrumbs_clicked(self, breadcrumbs_element: BreadcrumbsElement) -> None:
         if breadcrumbs_element == BreadcrumbsElement.ROOT:
-            self.reset_dataset()
+            self._reset_dataset()
 
         elif breadcrumbs_element == BreadcrumbsElement.DATASET:
             self._reset_eeg_fileset()
 
     def _on_dataset_selected(self, dataset: BIDSDataset) -> None:
         self.current_dataset.set_dataclass(dataset)
-        self._refresh_eeg_fileset_list()
 
     def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self.current_eeg_fileset.set_dataclass(eeg_fileset)
@@ -121,6 +136,10 @@ class PortalLogic(BaseLogic[PortalState]):
         ui.refresh_clicked.connect(self.refresh)
         ui.breadcrumbs_ui.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
+        ui.dataset_list.load_more_items.connect(self._load_more_datasets)
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
+        ui.eeg_fileset_list.load_more_items.connect(self._load_more_eeg_filesets)
 
         self.select_eeg_fileset.connect(ui.eeg_fileset_list.select_item)
+        self.reset_dataset_scroll.connect(ui.dataset_list.reset_scroll)
+        self.reset_eeg_fileset_scroll.connect(ui.eeg_fileset_list.reset_scroll)

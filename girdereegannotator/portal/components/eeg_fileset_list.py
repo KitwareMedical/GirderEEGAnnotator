@@ -12,11 +12,12 @@ from .expandable_list import ExpandableList
 class EEGFilesetListState:
     current_index: int | None = None
     items: list[EEGFileset] = field(default_factory=list)
+    can_load_more_items: bool = True
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
     def __init__(self, list_state: TypedState[EEGFilesetListState], **kwargs) -> None:
-        super().__init__(list_state, **kwargs)
+        super().__init__(ref="eeg_list", list_state=list_state, **kwargs)
 
         with self.action_slot:
             v3.VChip(

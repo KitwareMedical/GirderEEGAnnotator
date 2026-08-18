@@ -73,7 +73,7 @@ class AnnotatorAppUI:
                 ".nav-bar .v-card-item__content { display: flex; align-items: center; justify-content: space-between; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
-                ".portal { padding-left: 20px; padding-right: 20px; height: 100%;}"
+                ".portal { padding-left: 20px; padding-right: 20px; padding-bottom: 20px; height: 100%;}"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"

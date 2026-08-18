@@ -5,7 +5,7 @@ from trame.widgets.vuetify3 import VIcon, VProgressLinear
 
 
 class LoadStatus(Enum):
-    NOT_LOADED = auto()
+    UNDEFINED = auto()
     LOADING = auto()
     LOADED = auto()
     ERROR = auto()
