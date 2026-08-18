@@ -1,4 +1,6 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Generic, TypeVar
 
 from trame.widgets import html
@@ -11,11 +13,20 @@ from girdereegannotator.utils.components import Button
 V = TypeVar("V")
 
 
+class LoadResult(Enum):
+    MORE = "ok"
+    EMPTY = "empty"
+    LOADING = "loading"
+    ERROR = "error"
+
+LoadCallback = Callable[[], Awaitable[None]]
+
+
 @dataclass
 class ExpandableListState(Generic[V]):
     current_index: int | None = None
     items: list[V] = field(default_factory=list)
-    can_load_more_items: bool = True
+    load_result: LoadResult = LoadResult.MORE
 
 
 T = TypeVar("T", bound=ExpandableListState)
@@ -51,7 +62,6 @@ class ExpandableListItem(v3.VListItem):
 
 class ExpandableList(v3.VList, Generic[T, V]):
     item_selected = Signal(V)
-    load_more_items = Signal()
 
     def __init__(self, ref: str, list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
@@ -62,44 +72,62 @@ class ExpandableList(v3.VList, Generic[T, V]):
         self.list_state = list_state
         self.item = "item"
         self.index = "index"
+        self.load_callback: LoadCallback | None = None
 
-        with (
-            self,
-            v3.VInfiniteScroll(
+        with self:
+            with v3.VInfiniteScroll(
                 ref=self.scroll_ref,
                 empty_text="",
-                height="100%",
-                load=f"trigger('{self.server.trigger_name(self._load_more)}')"
-                ".then((result) => { console.log('Load more result:', result); $event.done(result ? 'ok' : 'empty'); });",
-            ),
-        ):
-            with v3.Template(v_slot_loading=True):
-                self.load_slot = html.Div()
-
-            with html.Div(
-                v_for=f"({self.item}, {self.index}) in {list_state.name.items}",
-                key=f"{self.item}.name",
+                load_more_text="Load more",
+                height="calc(100% - 30px)",
+                mode="manual",
+                load=f"trigger('{self.server.trigger_name(self._load_more)}')",
+                # ".then((result) => { $event.done(result); });",
             ):
-                with (
-                    ExpandableListItem(
-                        expanded=f"{list_state.name.current_index} === {self.index}",
-                        click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
-                        title=(f"{self.item}.name",),
-                    ),
-                    v3.Template(v_slot_append=True),
-                ):
-                    self.action_slot = html.Div(classes="button-bar")
+                with v3.Template(v_slot_loading=True):
+                    self.load_slot = html.Div()
 
-                with (
-                    v3.VExpandTransition(),
-                    html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
-                ):
-                    self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
+                with v3.Template(v_slot_load_more="{ props }"):
+                    Button(
+                        v_if=f"{list_state.name.load_result} === {LoadResult.MORE.value}",
+                        v_bind="props",
+                        text="Load more",
+                        density="compact",
+                    )
 
-    async def _load_more(self) -> bool:
-        if self.list_state.data.can_load_more_items:
-            self.load_more_items()
-        return self.list_state.data.can_load_more_items
+                with html.Div(
+                    v_for=f"({self.item}, {self.index}) in {list_state.name.items}",
+                    key=f"{self.item}.name",
+                ):
+                    with (
+                        ExpandableListItem(
+                            expanded=f"{list_state.name.current_index} === {self.index}",
+                            click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
+                            title=(f"{self.item}.name",),
+                        ),
+                        v3.Template(v_slot_append=True),
+                    ):
+                        self.action_slot = html.Div(classes="button-bar")
+
+                    with (
+                        v3.VExpandTransition(),
+                        html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
+                    ):
+                        self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
+            with html.Div(classes="d-flex justify-end align-center", style="height: 30px"):
+                html.Span("{{" + f"{list_state.name.items}.length" + "}} datasets", v_if=f"{list_state.name.items}.length")
+
+    def set_load_callback(self, callback: LoadCallback) -> None:
+        self.load_callback = callback
+
+    def _load_more(self) -> str:
+        if self.load_callback is None:
+            return LoadResult.EMPTY.value
+
+        if self.list_state.data.load_result == LoadResult.MORE:
+            self.load_callback()
+
+        return self.list_state.data.load_result.value
 
     def reset_scroll(self) -> None:
         self.server.js_call(self.scroll_ref, "reset")

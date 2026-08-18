@@ -4,14 +4,15 @@ from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import BIDSDataset
 
-from .expandable_list import ExpandableList
+from .expandable_list import ExpandableList, LoadResult
 
 
 @dataclass
 class DatasetListState:
     current_index: int | None = None
     items: list[BIDSDataset] = field(default_factory=list)
-    can_load_more_items: bool = True
+    load_result: LoadResult = LoadResult.MORE
+
 
 
 class DatasetList(ExpandableList[DatasetListState, BIDSDataset]):

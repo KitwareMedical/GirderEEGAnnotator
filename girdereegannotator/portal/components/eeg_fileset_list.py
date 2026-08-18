@@ -5,14 +5,14 @@ from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import EEGFileset
 
-from .expandable_list import ExpandableList
+from .expandable_list import ExpandableList, LoadResult
 
 
 @dataclass
 class EEGFilesetListState:
     current_index: int | None = None
     items: list[EEGFileset] = field(default_factory=list)
-    can_load_more_items: bool = True
+    load_result: LoadResult = LoadResult.MORE
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
