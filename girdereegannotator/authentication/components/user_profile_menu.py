@@ -23,6 +23,7 @@ class UserProfileMenu(v3.VMenu):
                     v_bind="activatorProps",
                     avatar_text=f"{{{{ {user_state.name.first_name}.charAt(0) }}}}{{{{ {user_state.name.last_name}.charAt(0) }}}}",
                     text_transform="uppercase",
+                    color="secondary",
                 )
 
             with (

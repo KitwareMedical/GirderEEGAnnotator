@@ -1,4 +1,6 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import Generic, TypeVar
 
 from trame.widgets import html
@@ -11,10 +13,19 @@ from girdereegannotator.utils.components import Button
 V = TypeVar("V")
 
 
+class LoadResult(Enum):
+    MORE = auto()
+    EMPTY = auto()
+
+
+LoadCallback = Callable[[], Awaitable[None]]
+
+
 @dataclass
 class ExpandableListState(Generic[V]):
     current_index: int | None = None
     items: list[V] = field(default_factory=list)
+    load_result: LoadResult = LoadResult.MORE
 
 
 T = TypeVar("T", bound=ExpandableListState)
@@ -48,10 +59,10 @@ class ExpandableListItem(v3.VListItem):
             )
 
 
-class ExpandableList(v3.VList, Generic[T, V]):
+class ExpandableList(html.Div, Generic[T, V]):
     item_selected = Signal(V)
 
-    def __init__(self, list_state: TypedState[T], **kwargs) -> None:
+    def __init__(self, list_state: TypedState[T], item_type: str, **kwargs) -> None:
         super().__init__(
             classes="expandable-list",
             **kwargs,
@@ -59,23 +70,61 @@ class ExpandableList(v3.VList, Generic[T, V]):
         self.list_state = list_state
         self.item = "item"
         self.index = "index"
+        self.load_callback: LoadCallback | None = None
 
-        with self, html.Div(v_for=f"({self.item}, {self.index}) in {list_state.name.items}"):
+        with self:
             with (
-                ExpandableListItem(
-                    expanded=f"{list_state.name.current_index} === {self.index}",
-                    click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
-                    title=(f"{self.item}.name",),
+                v3.VList(classes="expandable-list__content"),
+                html.Div(
+                    v_for=f"({self.item}, {self.index}) in {list_state.name.items}",
+                    key=f"{self.item}.name",
                 ),
-                v3.Template(v_slot_append=True),
             ):
-                self.action_slot = html.Div(classes="button-bar")
+                with (
+                    ExpandableListItem(
+                        expanded=f"{list_state.name.current_index} === {self.index}",
+                        click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
+                        title=(f"{self.item}.name",),
+                    ),
+                    v3.Template(v_slot_append=True),
+                ):
+                    self.action_slot = html.Div(classes="button-bar")
 
-            with (
-                v3.VExpandTransition(),
-                html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
-            ):
-                self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
+                with (
+                    v3.VExpandTransition(),
+                    html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
+                ):
+                    self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
+
+            with html.Div(classes="expandable-list__more"):
+                Button(
+                    v_if=f"{list_state.name.load_result} === {LoadResult.MORE.value}",
+                    classes="ma-4",
+                    click=self._load_next,
+                    color="primary",
+                    density="compact",
+                    text="Load more",
+                    variant="tonal",
+                )
+
+            with html.Div(v_if=f"{list_state.name.items}.length", classes="expandable-list__count"):
+                html.Span(
+                    f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
+                    v_if=f"{list_state.name.load_result} === {LoadResult.MORE.value}",
+                )
+                html.Span(
+                    f"{{{{ {list_state.name.items}.length }}}} {item_type}",
+                    v_else=True,
+                )
+
+    def set_load_callback(self, callback: LoadCallback) -> None:
+        self.load_callback = callback
+
+    def _load_next(self) -> None:
+        if self.load_callback is None or self.list_state.data.load_result != LoadResult.MORE:
+            return
+
+        self.load_callback()
 
     def build_select_item_button(self, **kwargs) -> None:
         Button(

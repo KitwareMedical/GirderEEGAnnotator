@@ -95,15 +95,15 @@ class GirderDatabase(DatabaseInterface):
         user = self.girder_client.get(path="user/me")
         return self._user_as_dataclass(user) if user else None
 
-    def list_datasets(self, _collection_id: str | None = None) -> list[BIDSDataset]:
+    def list_datasets(self, _collection_id: str | None = None, offset: int = 0, limit: int = 15) -> list[BIDSDataset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_datasets(self.collection_id)
+        return self.bids_handler.list_datasets(self.collection_id, offset, limit)
 
-    def list_eeg_filesets(self, dataset: BIDSDataset) -> list[EEGFileset]:
+    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int = 0, limit: int = 15) -> list[EEGFileset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_eeg_filesets(dataset)
+        return self.bids_handler.list_eeg_filesets(dataset, offset, limit)
 
     def _download_media_file(self, media_file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
         media_file_path = Path(download_dir) / media_file.name
