@@ -1,6 +1,6 @@
 from trame_server.core import Server
 
-from girdereegannotator.database.models import EEGFileset
+from girdereegannotator.database.models import EEGFileset, User
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from ..authentication import AuthenticationLogic
@@ -25,24 +25,24 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self._portal_logic.eeg_fileset_unselected.connect(self._on_eeg_fileset_unselected)
         self._portal_logic.eeg_fileset_selected.connect(self._on_eeg_fileset_selected)
 
-        self._auth_logic.user_connected.connect(self._on_user_connected)
-        self._auth_logic.user_disconnected.connect(self._on_user_disconnected)
+        self._auth_logic.user_updated.connect(self._on_user_updated)
 
         self.ctrl.on_client_connected.add(self._on_client_connected)
 
     def _on_client_connected(self, **_kwargs) -> None:
         if self.data.nav_state.window == NavigationWindow.UNDEFINED:
-            self._auth_logic.set_current_user()
+            self._auth_logic.update_current_user()
 
         elif self.data.nav_state.window == NavigationWindow.PORTAL:
             self._portal_logic.refresh()
         self.state.flush()
 
-    def _on_user_connected(self) -> None:
-        self._portal_logic.refresh()
-        self.data.nav_state.window = NavigationWindow.PORTAL
+    def _on_user_updated(self, user: User) -> None:
+        if user._id is not None:
+            self._portal_logic.refresh()
+            self.data.nav_state.window = NavigationWindow.PORTAL
+            return
 
-    def _on_user_disconnected(self) -> None:
         self._portal_logic.reset_state()
         self._eeg_annotator_logic.reset_state()
         self.data.nav_state.window = NavigationWindow.UNDEFINED

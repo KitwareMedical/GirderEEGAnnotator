@@ -2,25 +2,26 @@ from trame_server.core import Server
 from undo_stack import Signal
 
 from girdereegannotator.database.exceptions import AuthenticationError
+from girdereegannotator.database.models import User
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from .authentication_ui import AuthenticationState, AuthenticationUI
 
 
 class AuthenticationLogic(BaseLogic[AuthenticationState]):
-    user_connected = Signal()
-    user_disconnected = Signal()
+    user_updated = Signal(User)
 
     def __init__(self, server: Server):
         super().__init__(server, AuthenticationState)
         self._current_user = self.get_sub_state(self.name.user_state)
 
-    def set_current_user(self) -> None:
+        self.bind_changes({self.name.user_state: self.user_updated})
+
+    def update_current_user(self) -> None:
         if self._current_user.data._id is None:
             user = self.ctrl.get_me()
             if user is not None:
                 self._current_user.set_dataclass(user)
-                self.user_connected()
 
     def set_ui(self, ui: AuthenticationUI) -> None:
         ui.auth_dialog.login_clicked.connect(self._login)
@@ -34,7 +35,6 @@ class AuthenticationLogic(BaseLogic[AuthenticationState]):
             user = self.ctrl.login(username, password)
             self._reset_state()
             self._current_user.set_dataclass(user)
-            self.user_connected()
 
         except AuthenticationError as e:
             self.data.login_state.error = str(e)
@@ -42,5 +42,4 @@ class AuthenticationLogic(BaseLogic[AuthenticationState]):
 
     def _logout(self) -> None:
         self._reset_state()
-        self.user_disconnected()
         self.ctrl.logout()

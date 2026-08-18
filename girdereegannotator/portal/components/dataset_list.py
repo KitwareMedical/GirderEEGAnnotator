@@ -18,7 +18,7 @@ class DatasetList(ExpandableList[DatasetListState, BIDSDataset]):
         super().__init__(list_state, **kwargs)
 
         with self.action_slot:
-            self.build_select_item_button(icon="mdi-arrow-right", tooltip="Open EEGs")
+            self.build_select_item_button(text="Open", prepend_icon="mdi-folder")
 
         with self.expand_slot:
             self.build_metadata(f"{self.item}.metadata")

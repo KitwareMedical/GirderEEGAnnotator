@@ -54,7 +54,6 @@ class ExpandableList(v3.VList, Generic[T, V]):
     def __init__(self, list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
             classes="expandable-list",
-            variant="tonal",
             **kwargs,
         )
         self.list_state = list_state
@@ -81,7 +80,7 @@ class ExpandableList(v3.VList, Generic[T, V]):
     def build_select_item_button(self, **kwargs) -> None:
         Button(
             color=kwargs.pop("color", "primary"),
-            variant=kwargs.pop("variant", "plain"),
+            flat=kwargs.pop("flat", True),
             click_stop=(self.select_item, f"[{self.index}]"),
             **kwargs,
         )

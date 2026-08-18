@@ -27,7 +27,6 @@ class Button(VBtn):
         else:
             kwargs["rounded"] = True
             kwargs["color"] = color
-            kwargs["variant"] = kwargs.get("variant", "tonal")
 
         text_transform = "uppercase" if kwargs.get("block", False) else text_transform or "none"
         kwargs["style"] = " ".join([kwargs.get("style", ""), f"text-transform: {text_transform};"])
