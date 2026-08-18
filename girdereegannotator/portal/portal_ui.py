@@ -5,6 +5,7 @@ from trame.widgets import vuetify3 as v3
 from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
+from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.utils.base_ui import BaseUI
 from girdereegannotator.utils.components import Button
 from girdereegannotator.utils.load_status import (
@@ -20,7 +21,7 @@ from .components.eeg_fileset_list import EEGFilesetList, EEGFilesetListState
 
 @dataclass
 class PortalState:
-    load_status: LoadStatus = LoadStatus.NOT_LOADED
+    load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
     current_dataset: BIDSDataset = field(default_factory=BIDSDataset)
     current_eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
@@ -35,18 +36,19 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         super().__init__(classes="portal", **kwargs)
         self._init_typed_state(self.state, PortalState)
         with self:
-            LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
-            with v3.VFadeTransition(mode="out-in"):
+            with html.Div(style="height: 5px;"):
+                LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
+            with html.Div(style="height: calc(100% - 5px);"), v3.VFadeTransition(mode="out-in"):
                 LoadErrorMessage(
                     v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
                     status_message=self.name.status_message,
                 )
                 self.dataset_list = DatasetList(
-                    v_else_if=f"{self.name.dataset_list_state.items}.length && !{self.name.current_dataset.name}",
+                    v_else_if=f"{self.is_list_showing(self.name.dataset_list_state)} && !{self.name.current_dataset.name}",
                     list_state=self.get_sub_state(self.name.dataset_list_state),
                 )
                 self.eeg_fileset_list = EEGFilesetList(
-                    v_else_if=f"{self.name.eeg_fileset_list_state.items}.length && !{self.name.current_eeg_fileset.name}",
+                    v_else_if=f"{self.is_list_showing(self.name.eeg_fileset_list_state)} && !{self.name.current_eeg_fileset.name}",
                     list_state=self.get_sub_state(self.name.eeg_fileset_list_state),
                 )
 
@@ -68,3 +70,9 @@ class PortalUI(html.Div, BaseUI[PortalState]):
 
     def is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.name.load_status} == {load_status.value})"
+
+    def is_list_showing(self, list_state: ExpandableListState) -> str:
+        return (
+            f"({self.is_load_status(LoadStatus.UNDEFINED)} || "
+            f"({self.is_load_status(LoadStatus.LOADING)} && {list_state.items}.length))"
+        )
