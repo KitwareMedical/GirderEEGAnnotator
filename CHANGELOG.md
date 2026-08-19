@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-08-19)
+
+### Chores
+
+- Rework refresh logic to keep it smooth
+  ([`3a2ca04`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/3a2ca04cbb4c60486467e22de06e8d327702fe8b))
+
+- **style**: Minor changes in style
+  ([`1959752`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/1959752af5d39078b20349821a961f97d421262d))
+
+### Features
+
+- **button**: Add custom button handling tooltips
+  ([`073871f`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/073871fe26b733e921da6d82b96e87480b1464e6))
+
+- **load status**: Add load status to portal
+  ([`3e8e40d`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/3e8e40db08928e5cc452e272de98ca8a480793ca))
+
+- **refresh**: Add button to refresh browser lists
+  ([`e4c8bcb`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/e4c8bcb6c68f9b0ed92e0ee795ae23478ef48aff))
+
+
 ## v1.6.0 (2026-08-17)
 
 ### Chores
