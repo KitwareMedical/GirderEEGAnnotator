@@ -4,15 +4,17 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import EEGFileset
+from girdereegannotator.utils.load_status import LoadStatus
 
-from .expandable_list import ExpandableList, LoadResult
+from .expandable_list import ExpandableList
 
 
 @dataclass
 class EEGFilesetListState:
     current_index: int | None = None
     items: list[EEGFileset] = field(default_factory=list)
-    load_result: LoadResult = LoadResult.MORE
+    load_status: LoadStatus = LoadStatus.UNDEFINED
+    status_message: str | None = None
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):

@@ -5,10 +5,7 @@ from trame_server import Server
 from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
-from girdereegannotator.portal.components.expandable_list import (
-    ExpandableListState,
-    LoadResult,
-)
+from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
@@ -36,35 +33,35 @@ class PortalLogic(BaseLogic[PortalState]):
         load_callable: Callable[[], list],
         **kwargs,
     ) -> Task | None:
-        if self.data.load_status == LoadStatus.LOADING:
+        if list_state.load_status == LoadStatus.LOADING:
             return None
 
-        self.data.load_status = LoadStatus.LOADING
+        list_state.load_status = LoadStatus.LOADING
 
         def _refresh() -> None:
             try:
                 item_list = load_callable(offset=len(list_state.items), limit=self.limit, **kwargs)
-                list_state.load_result = LoadResult.MORE if len(item_list) == self.limit else LoadResult.EMPTY
+                list_state.load_status = LoadStatus.UNDEFINED if len(item_list) == self.limit else LoadStatus.LOADED
                 list_state.items = list_state.items + item_list
 
-                self.data.load_status = LoadStatus.UNDEFINED
-
             except Exception as e:
-                self.data.load_status = LoadStatus.ERROR
-                self.data.status_message = str(e)
+                list_state.load_status = LoadStatus.ERROR
+                list_state.status_message = str(e)
 
         return self.create_async_task(_refresh)
 
     def _refresh_dataset_list(self) -> None:
         self.data.dataset_list_state.items = []
         self.data.dataset_list_state.current_index = None
-        self.data.dataset_list_state.load_result = LoadResult.MORE
+        self.data.dataset_list_state.load_status = LoadStatus.UNDEFINED
+        self.data.dataset_list_state.status_message = None
         self._load_next_datasets()
 
     def _refresh_eeg_fileset_list(self) -> None:
         self.data.eeg_fileset_list_state.items = []
         self.data.eeg_fileset_list_state.current_index = None
-        self.data.eeg_fileset_list_state.load_result = LoadResult.MORE
+        self.data.eeg_fileset_list_state.load_status = LoadStatus.UNDEFINED
+        self.data.eeg_fileset_list_state.status_message = None
         self._load_next_eeg_filesets()
 
     def _load_next_datasets(self) -> Task | None:
@@ -113,7 +110,7 @@ class PortalLogic(BaseLogic[PortalState]):
 
         if (self.data.eeg_fileset_list_state.current_index + offset) == len(
             self.data.eeg_fileset_list_state.items
-        ) and self.data.eeg_fileset_list_state.load_result == LoadResult.MORE:
+        ) and self.data.eeg_fileset_list_state.load_result == LoadStatus.UNDEFINED:
             refresh_task = self._load_next_eeg_filesets()
             if refresh_task is not None:
                 await refresh_task
