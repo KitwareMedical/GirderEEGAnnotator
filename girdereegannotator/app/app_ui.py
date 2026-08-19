@@ -43,6 +43,12 @@ class AnnotatorAppUI:
         self.layout = AnnotatorAppLayout(server)
 
         with self.layout:
+            box_shadow = (
+                "0 2px 1px -1px var(--v-shadow-key-umbra-opacity, #0003), "
+                "0 1px 1px -1px var(--v-shadow-key-penumbra-opacity, #00000024), "
+                "0 1px 3px -1px var(--v-shadow-key-ambient-opacity, #0000001f)"
+            )
+
             client.Style(
                 "html { overflow-y: hidden; } "
                 ".annotator { height: 100vh; display: flex; flex-direction: column;}"
@@ -52,20 +58,22 @@ class AnnotatorAppUI:
                 ".app-main { height: calc(100vh - 60px); padding-left: 8px; padding-right: 8px; padding-bottom: 8px }"
                 ".breadcrumbs-button { opacity: 1 !important; padding: 0px; } "
                 ".button-bar { display: flex; flex-direction: row; align-items: center; gap: 8px;}"
-                ".expandable-list { height: calc(100% - 50px); padding: 0px; }"
-                ".expandable-list-item { margin-top: 4px;}"
-                ".expandable-list-item--expanded { border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; }"
-                ".expansion-card { border-top-left-radius: 0px; border-top-right-radius: 0px; }"
+                ".expandable-list { height: 100%; padding: 0px; }"
+                f".expandable-list-item {{ background-color: rgb(var(--v-theme-surface-variant)); margin-top: 4px; box-shadow: {box_shadow}; }}"
+                ".expandable-list-item--expanded { border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; box-shadow: none; }"
+                f".expansion-card {{ border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: {box_shadow}; }}"
                 ".image-display-area { height: calc(100% - 2px); padding: 2px; }"
-                ".metadata-content { display: flex; flex-direction: row; justify-content: space-between; align-items: center; gap:8px; }"
+                ".load-error-message { display: flex; justify-content: center; align-items: center; height: 100%; }"
+                ".load-progress .v-progress-linear__indeterminate { animation-duration: 1s; }"
+                ".metadata-content { display: flex; justify-content: space-between; align-items: center; gap:8px; }"
                 ".metadata-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
                 ".metadata-item { width: 50%; }"
                 ".metadata-list { display: flex; flex-wrap: wrap; }"
-                ".nav-bar { display: flex; justify-content: space-between; height: 65px; }"
+                ".nav-bar { height: 65px; }"
+                ".nav-bar .v-card-item__content { display: flex; align-items: center; justify-content: space-between; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
-                ".portal { padding-left: 20px; padding-right: 20px; display: flex; flex-direction: column; height: 100%}"
-                ".portal-pagination { height: 50px; display: flex; width: 100%; align-items: center; justify-content: center; }"
+                ".portal { padding-left: 20px; padding-right: 20px; height: 100%;}"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
@@ -79,6 +87,9 @@ class AnnotatorAppUI:
 
             with self.navigation.portal_breadcrumbs:
                 self.portal_ui.build_breadcrumbs()
+
+            with self.navigation.portal_toolbar:
+                self.portal_ui.build_toolbar()
 
             with self.navigation.annotator:
                 self.eeg_annotator_ui = EGGAnnotatorUI()

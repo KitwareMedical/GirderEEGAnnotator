@@ -25,7 +25,7 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
                 text=(f"{self.item}.annotations.length",),
                 color="warning",
             )
-            self.build_select_item_button(icon="mdi-cast-variant")
+            self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
 
         with self.expand_slot:
             self.build_metadata(f"{self.item}.metadata")

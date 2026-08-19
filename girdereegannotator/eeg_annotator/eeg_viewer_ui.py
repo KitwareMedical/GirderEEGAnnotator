@@ -1,18 +1,15 @@
 from dataclasses import dataclass, field
-from enum import Enum, auto
 
 from trame.widgets import html, rca
 from trame.widgets import vuetify3 as v3
 
 from girdereegannotator.database.models import Asset
 from girdereegannotator.utils.base_ui import BaseUI
-
-
-class LoadStatus(Enum):
-    NOT_LOADED = auto()
-    LOADING = auto()
-    LOADED = auto()
-    ERROR = auto()
+from girdereegannotator.utils.load_status import (
+    LoadErrorMessage,
+    LoadProgress,
+    LoadStatus,
+)
 
 
 @dataclass
@@ -31,32 +28,30 @@ class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
         self._init_typed_state(self.state, EEGViewerState)
 
         with self:
-            with (
-                html.Div(v_if=self.is_load_status(LoadStatus.LOADED), classes="fill-height"),
-                v3.VHover(
-                    v_slot="{ props }",
-                    update_modelValue=(
-                        "(value) => {if ("
-                        f"value && {self._root_elem_ref} != window.document.activeElement"
-                        ") {"
-                        f"{self._root_elem_ref}.focus();"
-                        "} }"
-                    ),
-                ),
-            ):
-                self.rca = rca.RemoteControlledArea(
-                    v_bind="props",
-                    ref=self._ref,
-                    send_mouse_move=True,
-                )
-
-            with html.Div(v_else=True, classes="d-flex flex-column justify-center align-center fill-height"):
-                v3.VProgressCircular(v_if=self.is_load_status(LoadStatus.LOADING), indeterminate=True, size=100)
-                with html.Div(
+            LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
+            with v3.VFadeTransition(mode="out-in"):
+                LoadErrorMessage(
                     v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message}",
+                    status_message=self.name.status_message,
+                )
+                with (
+                    html.Div(v_else_if=self.is_load_status(LoadStatus.LOADED), classes="fill-height"),
+                    v3.VHover(
+                        v_slot="{ props }",
+                        update_modelValue=(
+                            "(value) => {if ("
+                            f"value && {self._root_elem_ref} != window.document.activeElement"
+                            ") {"
+                            f"{self._root_elem_ref}.focus();"
+                            "} }"
+                        ),
+                    ),
                 ):
-                    v3.VIcon(color="warning", icon="mdi-alert-circle", size=100)
-                    html.Span("{{ " + self.name.status_message + " }}")
+                    self.rca = rca.RemoteControlledArea(
+                        v_bind="props",
+                        ref=self._ref,
+                        send_mouse_move=True,
+                    )
 
     def is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.name.load_status} == {load_status.value})"

@@ -1,6 +1,8 @@
 from trame.widgets import vuetify3 as v3
 from trame.widgets.html import Div, Span
 
+from girdereegannotator.utils.components import Button
+
 SHORTCUTS = {
     "selection": [
         (["alpha-a"], "Select all"),
@@ -46,21 +48,13 @@ class ShortcutsPanel(v3.VDialog):
 
     def _build_ui(self) -> None:
         with self:
-            with (
-                v3.Template(v_slot_activator="{ props : activatorProps }"),
-                v3.VBtn(
+            with v3.Template(v_slot_activator="{ props : activatorProps }"):
+                Button(
                     v_bind="activatorProps",
-                    icon=True,
-                    variant="text",
-                ),
-            ):
-                v3.VTooltip(
-                    activator="parent",
-                    close_delay=100,
-                    open_delay=500,
-                    text="Keyboard shortcuts",
+                    icon="mdi-help-circle-outline",
+                    tooltip="Keyboard shortcuts",
+                    tooltip_location="bottom start",
                 )
-                v3.VIcon(icon="mdi-help-circle-outline")
 
             with v3.VCard(), v3.VCardText():
                 for shortcut_theme, shortcuts in SHORTCUTS.items():

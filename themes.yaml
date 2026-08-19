@@ -8,6 +8,7 @@ theme:
         secondary: "rgb(52, 153, 145)"
         item: "rgb(224, 240, 243)"
         surface: "rgb(255, 255, 255)"
+        surface-variant: "rgb(230, 236, 241)"
         background: "rgb(222, 239, 244)"
         on-background: "rgb(28, 48, 57)"
         on-surface: "rgb(42, 58, 65)"

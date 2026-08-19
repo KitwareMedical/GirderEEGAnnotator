@@ -6,6 +6,8 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
+from girdereegannotator.utils.components import Button
+
 V = TypeVar("V")
 
 
@@ -52,7 +54,6 @@ class ExpandableList(v3.VList, Generic[T, V]):
     def __init__(self, list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
             classes="expandable-list",
-            variant="tonal",
             **kwargs,
         )
         self.list_state = list_state
@@ -77,11 +78,10 @@ class ExpandableList(v3.VList, Generic[T, V]):
                 self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
 
     def build_select_item_button(self, **kwargs) -> None:
-        v3.VBtn(
+        Button(
             color=kwargs.pop("color", "primary"),
-            variant=kwargs.pop("variant", "plain"),
+            flat=kwargs.pop("flat", True),
             click_stop=(self.select_item, f"[{self.index}]"),
-            __events=[("click_stop", "click.stop")],
             **kwargs,
         )
 

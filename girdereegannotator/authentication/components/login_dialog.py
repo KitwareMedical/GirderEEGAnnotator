@@ -4,6 +4,8 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
+from girdereegannotator.utils.components import Button
+
 
 @dataclass
 class LoginState:
@@ -67,12 +69,12 @@ class LoginDialog(v3.VDialog):
                     prepend_inner_icon="mdi-lock",
                 )
             with v3.VCardActions():
-                v3.VBtn(
-                    "Log In",
+                Button(
+                    text="Log In",
                     block=True,
+                    color="primary",
                     disabled=("!isValid.value",),
                     loading=(login_state.name.loading,),
                     type="submit",
-                    variant="tonal",
                     __properties=["type"],
                 )

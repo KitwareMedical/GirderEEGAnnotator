@@ -1,9 +1,15 @@
+from asyncio import Task
 from collections.abc import Callable
 from typing import Any, Generic, TypeVar
 
 from trame_server import Server
 from trame_server.state import State
 from trame_server.utils.typed_state import TypedState
+
+from girdereegannotator.utils.async_state_context import (
+    AsyncStateContext,
+    create_async_task,
+)
 
 T = TypeVar("T")
 V = TypeVar("V")
@@ -14,6 +20,8 @@ class BaseLogic(Generic[T]):
         self._server = server
         self._state_type = state_type
         self.typed_state: TypedState[T] | None = TypedState(self.state, state_type) if state_type else None
+
+        self.async_state_context = AsyncStateContext(server)
 
     @property
     def server(self) -> Server:
@@ -34,6 +42,9 @@ class BaseLogic(Generic[T]):
     @property
     def data(self) -> T:
         return self.typed_state.data if self.typed_state else None
+
+    def create_async_task(self, callable_method: Callable[..., None], *args) -> Task:
+        return create_async_task(self.async_state_context, callable_method, *args)
 
     def bind_changes(self, change_dict: dict[Any | list[Any] | tuple[Any], Callable]) -> None:
         if self.typed_state:
