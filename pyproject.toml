@@ -6,7 +6,7 @@ authors = [
     {name = "Kitware Europe"},
 ]
 dependencies = [
-    "eegvizlib",
+    "eegvizlib>=0.2.0rc3",
     "girder-client",
     "mne",
     "py-undo-stack",

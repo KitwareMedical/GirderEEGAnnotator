@@ -14,7 +14,7 @@ class BIDSSuffix:
 @dataclass
 class BIDSExtension:
     eeg: str = ".edf"
-    annotation: str = ".csv"
+    annotation: str = ".tsv"
 
 
 @dataclass
