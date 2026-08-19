@@ -19,6 +19,12 @@ class RCAView:
 
         self._context = libeegviz.create2(file_path, annotation_file_path)
 
+    def set_annotation_file(self, annotation_file_path: str) -> None:
+        if self._context is None:
+            return
+
+        libeegviz.load_annotations(self._context, annotation_file_path)
+
     def _move(self, x: float, y: float) -> None:
         if self._context is None:
             return

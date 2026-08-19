@@ -18,7 +18,7 @@ class FileSuffix:
 @dataclass
 class FileExtension:
     eeg: str = ".edf"
-    annotation: str = ".csv"
+    annotation: str = ".tsv"
 
 
 @dataclass
