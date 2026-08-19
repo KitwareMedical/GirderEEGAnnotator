@@ -1,7 +1,6 @@
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
@@ -9,23 +8,24 @@ from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.utils.components import Button
+from girdereegannotator.utils.load_status import (
+    LoadErrorMessage,
+    LoadProgress,
+    LoadStatus,
+)
 
 V = TypeVar("V")
 
 
-class LoadResult(Enum):
-    MORE = auto()
-    EMPTY = auto()
-
-
-LoadCallback = Callable[[], Awaitable[None]]
+LoadCallback = Callable[[], Any]
 
 
 @dataclass
 class ExpandableListState(Generic[V]):
     current_index: int | None = None
     items: list[V] = field(default_factory=list)
-    load_result: LoadResult = LoadResult.MORE
+    load_status: LoadStatus = LoadStatus.UNDEFINED
+    status_message: str | None = None
 
 
 T = TypeVar("T", bound=ExpandableListState)
@@ -73,55 +73,72 @@ class ExpandableList(html.Div, Generic[T, V]):
         self.load_callback: LoadCallback | None = None
 
         with self:
-            with (
-                v3.VList(classes="expandable-list__content"),
-                html.Div(
-                    v_for=f"({self.item}, {self.index}) in {list_state.name.items}",
-                    key=f"{self.item}.name",
-                ),
-            ):
-                with (
-                    ExpandableListItem(
-                        expanded=f"{list_state.name.current_index} === {self.index}",
-                        click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
-                        title=(f"{self.item}.name",),
-                    ),
-                    v3.Template(v_slot_append=True),
+            with html.Div(classes="expandable-list__load"):
+                LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
+
+            with v3.VFadeTransition(mode="out-in"):
+                with html.Div(
+                    v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.list_state.name.status_message} != null",
+                    classes="expandable-list__error",
                 ):
-                    self.action_slot = html.Div(classes="button-bar")
+                    LoadErrorMessage(status_message=self.list_state.name.status_message)
 
-                with (
-                    v3.VExpandTransition(),
-                    html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
+                with html.Div(
+                    v_else_if=f"{self.list_state.name.items}.length",
+                    classes="expandable-list__content",
                 ):
-                    self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
+                    with (
+                        v3.VList(classes="expandable-list__content-list"),
+                        html.Div(
+                            v_for=f"({self.item}, {self.index}) in {list_state.name.items}",
+                            key=f"{self.item}.name",
+                        ),
+                    ):
+                        with (
+                            ExpandableListItem(
+                                expanded=f"{list_state.name.current_index} === {self.index}",
+                                click=f"{list_state.name.current_index} === {self.index} ? {list_state.name.current_index} = null : {list_state.name.current_index} = {self.index}",
+                                title=(f"{self.item}.name",),
+                            ),
+                            v3.Template(v_slot_append=True),
+                        ):
+                            self.action_slot = html.Div(classes="button-bar")
 
-            with html.Div(classes="expandable-list__more"):
-                Button(
-                    v_if=f"{list_state.name.load_result} === {LoadResult.MORE.value}",
-                    classes="ma-4",
-                    click=self._load_next,
-                    color="primary",
-                    density="compact",
-                    text="Load more",
-                    variant="tonal",
-                )
+                        with (
+                            v3.VExpandTransition(),
+                            html.Div(v_if=f"{list_state.name.current_index} === {self.index}"),
+                        ):
+                            self.expand_slot = v3.VCard(classes="expansion-card", flat=True, border=True)
 
-            with html.Div(v_if=f"{list_state.name.items}.length", classes="expandable-list__count"):
-                html.Span(
-                    f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
-                    v_if=f"{list_state.name.load_result} === {LoadResult.MORE.value}",
-                )
-                html.Span(
-                    f"{{{{ {list_state.name.items}.length }}}} {item_type}",
-                    v_else=True,
-                )
+                    with html.Div(classes="expandable-list__content-more"):
+                        Button(
+                            v_if=self.is_load_status(LoadStatus.UNDEFINED),
+                            classes="ma-4",
+                            click=self._load_next,
+                            color="primary",
+                            density="compact",
+                            text="Load more",
+                            variant="tonal",
+                        )
+
+                    with html.Div(classes="expandable-list__content-count"):
+                        html.Span(
+                            f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
+                            v_if=self.is_load_status(LoadStatus.UNDEFINED),
+                        )
+                        html.Span(
+                            f"{{{{ {list_state.name.items}.length }}}} {item_type}",
+                            v_else_if=self.is_load_status(LoadStatus.LOADED),
+                        )
+
+    def is_load_status(self, load_status: LoadStatus) -> str:
+        return f"({self.list_state.name.load_status} == {load_status.value})"
 
     def set_load_callback(self, callback: LoadCallback) -> None:
         self.load_callback = callback
 
     def _load_next(self) -> None:
-        if self.load_callback is None or self.list_state.data.load_result != LoadResult.MORE:
+        if self.load_callback is None or self.list_state.data.load_status != LoadStatus.UNDEFINED:
             return
 
         self.load_callback()
