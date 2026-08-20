@@ -11,9 +11,9 @@ from girdereegannotator.utils.components import Button
 from .components.breadcrumbs import Breadcrumbs
 from .components.dataset_filters import DatasetFilters
 from .components.dataset_list import DatasetList, DatasetListState
-from .components.eeg_fileset_filters import EEGFilesetFilters
+from .components.eeg_fileset_filters import EEGFilesetFilters, EEGFilesetFiltersState
 from .components.eeg_fileset_list import EEGFilesetList, EEGFilesetListState
-from .components.search_filter import SearchState
+from .components.filters.search_filter import SearchState
 
 
 @dataclass
@@ -23,7 +23,7 @@ class PortalState:
     dataset_list_state: DatasetListState = field(default_factory=DatasetListState)
     eeg_fileset_list_state: EEGFilesetListState = field(default_factory=EEGFilesetListState)
     dataset_filter_state: SearchState = field(default_factory=SearchState)
-    eeg_fileset_filter_state: SearchState = field(default_factory=SearchState)
+    eeg_fileset_filter_state: EEGFilesetFiltersState = field(default_factory=EEGFilesetFiltersState)
 
 
 class PortalUI(html.Div, BaseUI[PortalState]):

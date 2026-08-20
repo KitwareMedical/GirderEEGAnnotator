@@ -84,6 +84,7 @@ class AnnotatorAppUI:
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
                 ".search-input { display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
                 ".search-input .v-field { background-color: inherit; }"
+                ".status-button .v-btn__content { display: flex; flex-direction: column; gap: 8px; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-input__details:has(.v-messages:empty) { display: none; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
