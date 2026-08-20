@@ -20,13 +20,11 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    def list_datasets(self, collection_id: str | None = None) -> list[BIDSDataset]:
+    def list_datasets(self, collection_id: str | None = None, offset: int = 0, limit: int = 15) -> list[BIDSDataset]:
         pass
 
     @abstractmethod
-    def list_eeg_filesets(
-        self, dataset: BIDSDataset, limit: int, offset: int, sort: str, sort_dir: int
-    ) -> list[EEGFileset]:
+    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int, limit: int) -> list[EEGFileset]:
         pass
 
     @abstractmethod

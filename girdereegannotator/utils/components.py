@@ -27,6 +27,7 @@ class Button(VBtn):
         else:
             kwargs["rounded"] = True
             kwargs["color"] = color
+            kwargs["flat"] = kwargs.get("flat", True)
 
         text_transform = "uppercase" if kwargs.get("block", False) else text_transform or "none"
         kwargs["style"] = " ".join([kwargs.get("style", ""), f"text-transform: {text_transform};"])
@@ -40,8 +41,8 @@ class Button(VBtn):
             if icon and not isinstance(icon, bool):
                 VIcon(icon=icon, color=color)
             if avatar_text:
-                with VAvatar(color=color):
-                    Span(avatar_text)
+                with VAvatar():
+                    Span(avatar_text, style=f"color: rgb(var(--v-theme-{color}));")
             if tooltip:
                 VTooltip(
                     activator="parent",
