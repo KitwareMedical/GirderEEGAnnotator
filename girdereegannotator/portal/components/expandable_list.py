@@ -15,17 +15,19 @@ from girdereegannotator.utils.load_status import (
 )
 
 V = TypeVar("V")
+W = TypeVar("W")
 
 
 LoadCallback = Callable[[], Any]
 
 
 @dataclass
-class ExpandableListState(Generic[V]):
+class ExpandableListState(Generic[V, W]):
     current_index: int | None = None
     items: list[V] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
+    filter_state: W = field(default_factory=W)
 
 
 T = TypeVar("T", bound=ExpandableListState)
@@ -73,7 +75,7 @@ class ExpandableList(html.Div, Generic[T, V]):
         self.load_callback: LoadCallback | None = None
 
         with self:
-            with html.Div(classes="expandable-list__load"):
+            with html.Div(classes="expandable-list__load"), v3.VFadeTransition(mode="out-in"):
                 LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
 
             with v3.VFadeTransition(mode="out-in"):
@@ -84,8 +86,7 @@ class ExpandableList(html.Div, Generic[T, V]):
                     LoadErrorMessage(status_message=self.list_state.name.status_message)
 
                 with html.Div(
-                    v_else_if=f"{self.list_state.name.items}.length",
-                    classes="expandable-list__content",
+                    v_else=True, classes="expandable-list__content", key=(f"{list_state.name.items}.length",)
                 ):
                     with (
                         v3.VList(classes="expandable-list__content-list"),
@@ -121,15 +122,18 @@ class ExpandableList(html.Div, Generic[T, V]):
                             variant="tonal",
                         )
 
-                    with html.Div(classes="expandable-list__content-count"):
-                        html.Span(
-                            f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
-                            v_if=self.is_load_status(LoadStatus.UNDEFINED),
-                        )
-                        html.Span(
-                            f"{{{{ {list_state.name.items}.length }}}} {item_type}",
-                            v_else_if=self.is_load_status(LoadStatus.LOADED),
-                        )
+            with (
+                v3.VFadeTransition(mode="out-in"),
+                html.Div(classes="expandable-list__count", key=(f"{list_state.name.items}.length",)),
+            ):
+                html.Span(
+                    f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
+                    v_if=self.is_load_status(LoadStatus.UNDEFINED),
+                )
+                html.Span(
+                    f"{{{{ {list_state.name.items}.length }}}} {item_type}",
+                    v_else_if=self.is_load_status(LoadStatus.LOADED),
+                )
 
     def is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.list_state.name.load_status} == {load_status.value})"
