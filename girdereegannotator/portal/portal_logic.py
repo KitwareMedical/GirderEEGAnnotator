@@ -6,6 +6,7 @@ from undo_stack import Signal
 
 from girdereegannotator.database.models import BIDSDataset, EEGFileset
 from girdereegannotator.portal.components.expandable_list import ExpandableListState
+from girdereegannotator.portal.components.filters.status_filter import Status
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
@@ -75,11 +76,12 @@ class PortalLogic(BaseLogic[PortalState]):
         if self.current_dataset.data._id is None:
             return None
 
+        self.data.eeg_fileset_filter_state.status_state.counts = dict.fromkeys(Status, 0)
         return self._load_next_list_item(
             self.data.eeg_fileset_list_state,
             self.server.controller.list_eeg_filesets,
             dataset=self.current_dataset.get_dataclass(),
-            search_text=self.data.eeg_fileset_filter_state.search_text,
+            search_text=self.data.eeg_fileset_filter_state.search_state.search_text,
         )
 
     def _reset_eeg_fileset(self) -> None:
@@ -148,11 +150,12 @@ class PortalLogic(BaseLogic[PortalState]):
         ui.breadcrumbs_ui.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
 
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
-        ui.dataset_filters.search.search_clicked.connect(self._refresh_dataset_list)
+        ui.dataset_filters.search_clicked.connect(self._refresh_dataset_list)
         ui.dataset_list.set_load_callback(self._load_next_datasets)
 
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
-        ui.eeg_fileset_filters.search.search_clicked.connect(self._refresh_eeg_fileset_list)
+        ui.eeg_fileset_filters.search_clicked.connect(self._refresh_eeg_fileset_list)
+        ui.eeg_fileset_filters.status_clicked.connect(self._refresh_eeg_fileset_list)
         ui.eeg_fileset_list.set_load_callback(self._load_next_eeg_filesets)
 
         self.select_eeg_fileset.connect(ui.eeg_fileset_list.select_item)

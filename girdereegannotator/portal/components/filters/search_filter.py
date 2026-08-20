@@ -12,13 +12,11 @@ class SearchState:
     search_text: str | None = None
 
 
-class Search(v3.VForm):
-    search_clicked = Signal()
-
-    def __init__(self, search_state: TypedState[SearchState], **kwargs) -> None:
+class SearchFilter(v3.VForm):
+    def __init__(self, search_state: TypedState[SearchState], on_search_clicked: Signal, **kwargs) -> None:
         super().__init__(
             classes="search-input",
-            submit_prevent=self.search_clicked,
+            submit_prevent=on_search_clicked,
             __events=[("submit_prevent", "submit.prevent")],
             **kwargs,
         )
@@ -33,7 +31,7 @@ class Search(v3.VForm):
                 width=200,
                 hide_details=True,
                 clearable=True,
-                click_clear=self.search_clicked,
+                click_clear=on_search_clicked,
             )
             Button(
                 color="secondary",
