@@ -16,10 +16,14 @@ V = TypeVar("V")
 
 
 class BaseLogic(Generic[T]):
-    def __init__(self, server: Server, state_type: type[T] | None):
+    def __init__(self, server: Server, state_type: type[T] | None = None, typed_state: TypedState[T] | None = None):
         self._server = server
         self._state_type = state_type
-        self.typed_state: TypedState[T] | None = TypedState(self.state, state_type) if state_type else None
+
+        if typed_state is not None:
+            self.typed_state = typed_state
+        else:
+            self.typed_state: TypedState[T] | None = TypedState(self.state, state_type) if state_type else None
 
         self.async_state_context = AsyncStateContext(server)
 

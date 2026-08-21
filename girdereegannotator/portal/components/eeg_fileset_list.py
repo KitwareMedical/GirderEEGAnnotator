@@ -15,6 +15,7 @@ class EEGFilesetListState:
     items: list[EEGFileset] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
+    max_index: int | None = None
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
@@ -32,3 +33,6 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
         with self.expand_slot:
             self.build_metadata(f"{self.item}.metadata")
+
+        with self.count_slot:
+            self.build_count("EEG filesets")

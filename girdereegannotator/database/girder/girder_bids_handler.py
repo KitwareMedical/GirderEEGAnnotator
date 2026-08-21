@@ -36,6 +36,7 @@ class GirderBIDSHandler:
         self.resource = GirderBIDSResource()
         self.suffix = FileSuffix()
         self.ext = FileExtension()
+        self.validation_threshold = 3
 
     @staticmethod
     def _extract_file_base_name(filename: str, suffix: str, extension: str) -> str:
@@ -177,7 +178,8 @@ class GirderBIDSHandler:
         eeg_fileset.annotations = self._find_annotation_files(eeg_fileset)
 
         eeg_fileset.validated = (
-            sum(annotation.status == AnnotationStatus.VALIDATED for annotation in eeg_fileset.annotations) >= 3
+            sum(annotation.status == AnnotationStatus.VALIDATED for annotation in eeg_fileset.annotations)
+            >= self.validation_threshold
         )
 
     def list_eeg_filesets(

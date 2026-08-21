@@ -7,7 +7,7 @@ from undo_stack import Signal
 
 from .filters.annotator_filter import AnnotatorFilter, AnnotatorState
 from .filters.search_filter import SearchFilter, SearchState
-from .filters.status_filter import StatusFilter, StatusState
+from .filters.status_filter import Status, StatusFilter, StatusState
 
 
 @dataclass
@@ -20,7 +20,7 @@ class EEGFilesetFiltersState:
 class EEGFilesetFilters(html.Div):
     annotator_updated = Signal()
     search_clicked = Signal()
-    status_clicked = Signal()
+    status_clicked = Signal(Status)
 
     def __init__(self, filter_state: TypedState[EEGFilesetFiltersState], **kwargs) -> None:
         super().__init__(classes="list-filters button-bar", **kwargs)
