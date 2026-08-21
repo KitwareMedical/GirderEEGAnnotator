@@ -1,11 +1,16 @@
 import tempfile
-from asyncio import Task
+from asyncio import Task, to_thread
 from pathlib import Path
 
 from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 
-from girdereegannotator.database.models import Asset, BIDSExtension, EEGFileset
+from girdereegannotator.database.models import (
+    Asset,
+    DatabaseError,
+    EEGFileset,
+    FileExtension,
+)
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
@@ -22,11 +27,11 @@ class AnnotatorLoadingError(Exception):
 
 
 def is_eeg_file(file: Asset) -> bool:
-    return file.name.endswith(BIDSExtension.eeg)
+    return file.name.endswith(FileExtension.eeg)
 
 
 def is_annotation_file(file: Asset) -> bool:
-    return file.name.endswith(BIDSExtension.annotation)
+    return file.name.endswith(FileExtension.annotation)
 
 
 class EEGViewerLogic(BaseLogic[EEGViewerState]):
@@ -79,15 +84,18 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
     def load_eeg_files(self, eeg_fileset: EEGFileset) -> None:
-        def _load() -> None:
+        async def _load() -> None:
             try:
-                self._load_eeg_files(eeg_fileset)
+                updated_eeg_fileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
+                await to_thread(self._load_eeg_files, updated_eeg_fileset)
                 self.data.load_status = LoadStatus.LOADED
 
-            except (FileValidationError, AnnotatorLoadingError) as e:
+            except (FileValidationError, AnnotatorLoadingError, DatabaseError) as e:
                 self.data.load_status = LoadStatus.ERROR
                 self.data.status_message = str(e)
                 raise e
+
+            return updated_eeg_fileset
 
         self.reset_state()
         self.data.load_status = LoadStatus.LOADING

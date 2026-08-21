@@ -5,7 +5,7 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import BIDSDataset, EEGFileset
+from girdereegannotator.database.models import Dataset, EEGFileset
 
 
 class BreadcrumbsElement(Enum):
@@ -16,7 +16,7 @@ class BreadcrumbsElement(Enum):
 class Breadcrumbs(html.Div):
     breadcrumbs_clicked = Signal(BreadcrumbsElement)
 
-    def __init__(self, dataset_state: TypedState[BIDSDataset], eeg_fileset_state: TypedState[EEGFileset], **kwargs):
+    def __init__(self, dataset_state: TypedState[Dataset], eeg_fileset_state: TypedState[EEGFileset], **kwargs):
         super().__init__(classes="button-bar", **kwargs)
 
         with self:
