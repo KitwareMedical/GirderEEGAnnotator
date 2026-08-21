@@ -24,22 +24,22 @@ class StatusState:
 
 class StatusFilter(v3.VBtnToggle):
     def __init__(self, status_state: TypedState[StatusState], on_status_clicked: Signal, **kwargs):
-        super().__init__(v_model=status_state.name.status, **kwargs)
+        super().__init__(
+            v_model=status_state.name.status, mandatory=True, update_modelValue=on_status_clicked, **kwargs
+        )
 
         status_buttons = [
-            {"status": Status.UNDEFINED.value, "color": "undefined"},
+            {"status": Status.UNDEFINED.value, "color": "secondary"},
             {"status": Status.VALIDATED.value, "color": "success"},
-            {"status": Status.TO_VALIDATE.value, "color": "primary"},
+            {"status": Status.TO_VALIDATE.value, "color": "info"},
             {"status": Status.TO_ANNOTATE.value, "color": "warning"},
         ]
 
         with self:
             for status_button in status_buttons:
                 with Button(
-                    classes="status-button",
-                    click=on_status_clicked,
+                    classes="mx-1 status-button",
                     value=status_button["status"],
-                    variant="tonal",
                     active_color=status_button["color"],
                 ):
                     html.Div(status_button["status"])
