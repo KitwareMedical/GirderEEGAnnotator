@@ -13,7 +13,7 @@ from ..interface_database import DatabaseInterface
 from ..models import (
     AnnotationFile,
     Asset,
-    BIDSDataset,
+    Dataset,
     EEGFile,
     EEGFileset,
     GirderModel,
@@ -95,12 +95,12 @@ class GirderDatabase(DatabaseInterface):
         user = self.girder_client.get(path="user/me")
         return self._user_as_dataclass(user) if user else None
 
-    def list_datasets(self, _collection_id: str | None = None, **kwargs) -> list[BIDSDataset]:
+    def list_datasets(self, _collection_id: str | None = None, **kwargs) -> list[Dataset]:
         if not self.authenticated:
             return []
         return self.bids_handler.list_datasets(self.collection_id, **kwargs)
 
-    def list_eeg_filesets(self, dataset: BIDSDataset, **kwargs) -> list[EEGFileset]:
+    def list_eeg_filesets(self, dataset: Dataset, **kwargs) -> list[EEGFileset]:
         if not self.authenticated:
             return []
         return self.bids_handler.list_eeg_filesets(dataset, **kwargs)

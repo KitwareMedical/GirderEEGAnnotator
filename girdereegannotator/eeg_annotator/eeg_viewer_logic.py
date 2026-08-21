@@ -5,7 +5,7 @@ from pathlib import Path
 from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 
-from girdereegannotator.database.models import Asset, BIDSExtension, EEGFileset
+from girdereegannotator.database.models import Asset, EEGFileset, FileExtension
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
@@ -22,11 +22,11 @@ class AnnotatorLoadingError(Exception):
 
 
 def is_eeg_file(file: Asset) -> bool:
-    return file.name.endswith(BIDSExtension.eeg)
+    return file.name.endswith(FileExtension.eeg)
 
 
 def is_annotation_file(file: Asset) -> bool:
-    return file.name.endswith(BIDSExtension.annotation)
+    return file.name.endswith(FileExtension.annotation)
 
 
 class EEGViewerLogic(BaseLogic[EEGViewerState]):

@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, field, fields
+from enum import Enum, auto
 from typing import Any
 
 GirderModel = dict[str, Any]
@@ -6,13 +7,13 @@ GirderParams = dict[str, Any]
 
 
 @dataclass
-class BIDSSuffix:
+class FileSuffix:
     eeg: str = "_eeg"
     annotation: str = "_events"
 
 
 @dataclass
-class BIDSExtension:
+class FileExtension:
     eeg: str = ".edf"
     annotation: str = ".csv"
 
@@ -33,11 +34,11 @@ class Model:
 
 
 @dataclass
-class BIDSDataset(Model):
+class Dataset(Model):
     _id: str | None = None
     name: str | None = None
     metadata: dict[str, str] = field(default_factory=dict)
-    derivative_dataset_id: str | None = None
+    upload_dataset_id: str | None = None
 
 
 @dataclass
@@ -46,9 +47,16 @@ class EEGFile(Model):
     name: str | None = None
 
 
+class AnnotationStatus(Enum):
+    IN_PROGRESS = auto()
+    TO_VALIDATE = auto()
+    VALIDATED = auto()
+
+
 @dataclass
 class AnnotationFile(EEGFile):
     annotator_id: str | None = None
+    status: AnnotationStatus = AnnotationStatus.IN_PROGRESS
 
 
 @dataclass
@@ -60,6 +68,7 @@ class EEGFileset:
     annotations: list[AnnotationFile] = field(default_factory=list)
     upload_dataset_id: str | None = None
     upload_folder_id: str | None = None
+    validated: bool = False
 
 
 @dataclass
