@@ -24,9 +24,7 @@ class StatusState:
 
 class StatusFilter(v3.VBtnToggle):
     def __init__(self, status_state: TypedState[StatusState], on_status_clicked: Signal, **kwargs):
-        super().__init__(
-            v_model=status_state.name.status, mandatory=True, update_modelValue=on_status_clicked, **kwargs
-        )
+        super().__init__(v_model=status_state.name.status, mandatory=True, update_modelValue=on_status_clicked**kwargs)
 
         status_buttons = [
             {"status": Status.UNDEFINED.value, "color": "secondary"},
@@ -39,6 +37,7 @@ class StatusFilter(v3.VBtnToggle):
             for status_button in status_buttons:
                 with Button(
                     classes="mx-1 status-button",
+                    click=on_status_clicked,
                     value=status_button["status"],
                     active_color=status_button["color"],
                 ):

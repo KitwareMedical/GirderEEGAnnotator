@@ -4,8 +4,14 @@ from collections.abc import Callable
 from trame_server import Server
 from undo_stack import Signal
 
-from girdereegannotator.database.models import Dataset, EEGFileset
+from girdereegannotator.database.models import (
+    AnnotationStatus,
+    Dataset,
+    EEGFileset,
+    User,
+)
 from girdereegannotator.portal.components.expandable_list import ExpandableListState
+from girdereegannotator.portal.components.filters.annotator_filter import Annotator
 from girdereegannotator.portal.components.filters.status_filter import Status
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
@@ -26,7 +32,13 @@ class PortalLogic(BaseLogic[PortalState]):
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
 
+        self.current_user_id = None
         self.limit = 15
+        self._eeg_filesets_database_offset = 0
+        self._eeg_filesets_exhausted = False
+
+    def set_current_user(self, user: User) -> None:
+        self.current_user_id = user._id
 
     def _load_next_list_item(
         self,
@@ -41,8 +53,10 @@ class PortalLogic(BaseLogic[PortalState]):
 
         def _refresh() -> None:
             try:
-                item_list = load_callable(offset=len(list_state.items), limit=self.limit, **kwargs)
-                list_state.load_status = LoadStatus.UNDEFINED if len(item_list) == self.limit else LoadStatus.LOADED
+                item_list = load_callable(limit=self.limit, **kwargs)
+                list_state.load_status = (
+                    LoadStatus.LOADED if not self.limit or len(item_list) < self.limit else LoadStatus.UNDEFINED
+                )
                 list_state.items = list_state.items + item_list
 
             except Exception as e:
@@ -63,12 +77,17 @@ class PortalLogic(BaseLogic[PortalState]):
         self.data.eeg_fileset_list_state.current_index = None
         self.data.eeg_fileset_list_state.load_status = LoadStatus.UNDEFINED
         self.data.eeg_fileset_list_state.status_message = None
+
+        self._eeg_filesets_exhausted = False
+        self._eeg_filesets_database_offset = 0
+
         self._load_next_eeg_filesets()
 
     def _load_next_datasets(self) -> Task | None:
         return self._load_next_list_item(
             self.data.dataset_list_state,
             self.server.controller.list_datasets,
+            offset=len(self.data.dataset_list_state.items),
             search_text=self.data.dataset_filter_state.search_text,
         )
 
@@ -79,10 +98,65 @@ class PortalLogic(BaseLogic[PortalState]):
         self.data.eeg_fileset_filter_state.status_state.counts = dict.fromkeys(Status, 0)
         return self._load_next_list_item(
             self.data.eeg_fileset_list_state,
-            self.server.controller.list_eeg_filesets,
+            self._load_filtered_eeg_filesets,
             dataset=self.current_dataset.get_dataclass(),
             search_text=self.data.eeg_fileset_filter_state.search_state.search_text,
         )
+
+    def _load_filtered_eeg_filesets(self, limit: int, **kwargs) -> list[EEGFileset]:
+        result: list[EEGFileset] = []
+
+        while len(result) < limit and not self._eeg_filesets_exhausted:
+            item_list = self.server.controller.list_eeg_filesets(
+                offset=self._eeg_filesets_database_offset,
+                limit=limit,
+                **kwargs,
+            )
+
+            if not item_list:
+                self._eeg_filesets_exhausted = True
+                break
+
+            self._eeg_filesets_database_offset += len(item_list)
+
+            result.extend(
+                eeg_fileset
+                for eeg_fileset in item_list
+                if self._matches_eeg_fileset_filter(
+                    eeg_fileset,
+                    self.data.eeg_fileset_filter_state.status_state.status,
+                    self.data.eeg_fileset_filter_state.annotator_state.annotator,
+                )
+            )
+
+            if len(item_list) < limit:
+                self._eeg_filesets_exhausted = True
+
+        return result[:limit]
+
+    def _matches_eeg_fileset_filter(
+        self,
+        eeg_fileset: EEGFileset,
+        status: Status,
+        annotator: Annotator,
+    ) -> bool:
+        if status == Status.VALIDATED and not eeg_fileset.validated:
+            return False
+
+        if status != Status.VALIDATED and eeg_fileset.validated:
+            return False
+
+        annotations = eeg_fileset.annotations
+        if status == Status.TO_VALIDATE:
+            annotations = (ann for ann in annotations if ann.status == AnnotationStatus.TO_VALIDATE)
+
+        if annotator == Annotator.ME:
+            return any(ann.annotator_id == self.current_user_id for ann in annotations)
+
+        if annotator == Annotator.NOT_ME:
+            return any(ann.annotator_id != self.current_user_id for ann in annotations)
+
+        return status != Status.TO_VALIDATE or any(annotations)
 
     def _reset_eeg_fileset(self) -> None:
         self.current_eeg_fileset.set_dataclass(EEGFileset())
@@ -107,6 +181,15 @@ class PortalLogic(BaseLogic[PortalState]):
     def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self.current_eeg_fileset.set_dataclass(eeg_fileset)
         self.eeg_fileset_selected(eeg_fileset)
+
+    def _on_eeg_fileset_status_clicked(self) -> None:
+        if self.data.eeg_fileset_filter_state.status_state.status == Status.VALIDATED:
+            self.data.eeg_fileset_filter_state.annotator_state.annotator = Annotator.UNDEFINED
+
+        elif self.data.eeg_fileset_filter_state.status_state.status == Status.TO_VALIDATE:
+            self.data.eeg_fileset_filter_state.annotator_state.annotator = Annotator.NOT_ME
+
+        self._refresh_eeg_fileset_list()
 
     async def _shift_eeg_fileset_index(self, offset: int) -> None:
         if self.data.eeg_fileset_list_state.current_index is None or not self.data.eeg_fileset_list_state.items:
@@ -156,7 +239,7 @@ class PortalLogic(BaseLogic[PortalState]):
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
         ui.eeg_fileset_filters.annotator_updated.connect(self._refresh_eeg_fileset_list)
         ui.eeg_fileset_filters.search_clicked.connect(self._refresh_eeg_fileset_list)
-        ui.eeg_fileset_filters.status_clicked.connect(self._refresh_eeg_fileset_list)
+        ui.eeg_fileset_filters.status_clicked.connect(self._on_eeg_fileset_status_clicked)
         ui.eeg_fileset_list.set_load_callback(self._load_next_eeg_filesets)
 
         self.select_eeg_fileset.connect(ui.eeg_fileset_list.select_item)

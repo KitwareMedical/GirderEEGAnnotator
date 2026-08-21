@@ -86,7 +86,8 @@ class ExpandableList(html.Div, Generic[T, V]):
                     LoadErrorMessage(status_message=self.list_state.name.status_message)
 
                 with html.Div(
-                    v_else=True, classes="expandable-list__content", key=(f"{list_state.name.items}.length",)
+                    v_else_if=f"{list_state.name.items}.length",
+                    classes="expandable-list__content",
                 ):
                     with (
                         v3.VList(classes="expandable-list__content-list"),
@@ -121,6 +122,8 @@ class ExpandableList(html.Div, Generic[T, V]):
                             text="Load more",
                             variant="tonal",
                         )
+
+                html.Div(v_else=True, classes="expandable-list__content")
 
             with (
                 v3.VFadeTransition(mode="out-in"),

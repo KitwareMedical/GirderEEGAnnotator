@@ -38,6 +38,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self.state.flush()
 
     def _on_user_updated(self, user: User) -> None:
+        self._portal_logic.set_current_user(user)
         if user._id is not None:
             self._portal_logic.refresh()
             self.data.nav_state.window = NavigationWindow.PORTAL
