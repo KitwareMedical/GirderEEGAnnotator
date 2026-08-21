@@ -20,7 +20,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
 
         self._eeg_annotator_logic.next_clicked.connect(self._portal_logic.select_next_eeg)
         self._eeg_annotator_logic.previous_clicked.connect(self._portal_logic.select_previous_eeg)
-        self._eeg_annotator_logic.eeg_fileset_updated.connect(self._portal_logic.update_eeg_fileset_list)
+        self._eeg_annotator_logic.eeg_fileset_updated.connect(self._portal_logic.update_eeg_fileset_in_list)
 
         self._portal_logic.eeg_fileset_unselected.connect(self._on_eeg_fileset_unselected)
         self._portal_logic.eeg_fileset_selected.connect(self._on_eeg_fileset_selected)
@@ -38,6 +38,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self.state.flush()
 
     def _on_user_updated(self, user: User) -> None:
+        self._portal_logic.set_current_user(user)
         if user._id is not None:
             self._portal_logic.refresh()
             self.data.nav_state.window = NavigationWindow.PORTAL

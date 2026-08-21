@@ -10,10 +10,10 @@ from girdereegannotator.utils.components import Button
 
 
 class Status(Enum):
-    UNDEFINED = "Show all"
-    VALIDATED = "Validated"
-    TO_VALIDATE = "To validate"
+    UNDEFINED = "All"
     TO_ANNOTATE = "To annotate"
+    TO_VALIDATE = "To validate"
+    VALIDATED = "Validated"
 
 
 @dataclass
@@ -25,14 +25,18 @@ class StatusState:
 class StatusFilter(v3.VBtnToggle):
     def __init__(self, status_state: TypedState[StatusState], on_status_clicked: Signal, **kwargs):
         super().__init__(
-            v_model=status_state.name.status, mandatory=True, update_modelValue=on_status_clicked, **kwargs
+            v_model=status_state.name.status,
+            mandatory=True,
+            **kwargs,
         )
+
+        status_state.bind_changes({status_state.name.status: on_status_clicked})
 
         status_buttons = [
             {"status": Status.UNDEFINED.value, "color": "secondary"},
-            {"status": Status.VALIDATED.value, "color": "success"},
-            {"status": Status.TO_VALIDATE.value, "color": "info"},
             {"status": Status.TO_ANNOTATE.value, "color": "warning"},
+            {"status": Status.TO_VALIDATE.value, "color": "info"},
+            {"status": Status.VALIDATED.value, "color": "success"},
         ]
 
         with self:
@@ -41,10 +45,17 @@ class StatusFilter(v3.VBtnToggle):
                     classes="mx-1 status-button",
                     value=status_button["status"],
                     active_color=status_button["color"],
+                    width=130,
                 ):
                     html.Div(status_button["status"])
                     html.Div(
                         f"{{{{ {status_state.name.counts}['{status_button['status']}'] }}}} EEG",
                         classes="text-caption",
                         v_if=f"'{status_button['status']}' in {status_state.name.counts}",
+                    )
+                    v3.VProgressCircular(
+                        v_else=True,
+                        indeterminate=True,
+                        size=15,
+                        width=3,
                     )

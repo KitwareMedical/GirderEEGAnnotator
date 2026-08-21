@@ -15,19 +15,18 @@ from girdereegannotator.utils.load_status import (
 )
 
 V = TypeVar("V")
-W = TypeVar("W")
 
 
 LoadCallback = Callable[[], Any]
 
 
 @dataclass
-class ExpandableListState(Generic[V, W]):
+class ExpandableListState(Generic[V]):
     current_index: int | None = None
     items: list[V] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
-    filter_state: W = field(default_factory=W)
+    max_index: int | None = None
 
 
 T = TypeVar("T", bound=ExpandableListState)
@@ -64,7 +63,7 @@ class ExpandableListItem(v3.VListItem):
 class ExpandableList(html.Div, Generic[T, V]):
     item_selected = Signal(V)
 
-    def __init__(self, list_state: TypedState[T], item_type: str, **kwargs) -> None:
+    def __init__(self, list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
             classes="expandable-list",
             **kwargs,
@@ -86,7 +85,8 @@ class ExpandableList(html.Div, Generic[T, V]):
                     LoadErrorMessage(status_message=self.list_state.name.status_message)
 
                 with html.Div(
-                    v_else=True, classes="expandable-list__content", key=(f"{list_state.name.items}.length",)
+                    v_else_if=f"{list_state.name.items}.length",
+                    classes="expandable-list__content",
                 ):
                     with (
                         v3.VList(classes="expandable-list__content-list"),
@@ -122,18 +122,11 @@ class ExpandableList(html.Div, Generic[T, V]):
                             variant="tonal",
                         )
 
-            with (
-                v3.VFadeTransition(mode="out-in"),
-                html.Div(classes="expandable-list__count", key=(f"{list_state.name.items}.length",)),
-            ):
-                html.Span(
-                    f"{{{{ {list_state.name.items}.length }}}} {item_type} loaded",
-                    v_if=self.is_load_status(LoadStatus.UNDEFINED),
-                )
-                html.Span(
-                    f"{{{{ {list_state.name.items}.length }}}} {item_type}",
-                    v_else_if=self.is_load_status(LoadStatus.LOADED),
-                )
+                html.Div(v_else=True, classes="expandable-list__content")
+
+            self.count_slot = html.Div(
+                classes="expandable-list__count",
+            )
 
     def is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.list_state.name.load_status} == {load_status.value})"
@@ -157,6 +150,24 @@ class ExpandableList(html.Div, Generic[T, V]):
 
     def build_metadata(self, metadata: str) -> None:
         ExpandableListItemMetadata(metadata)
+
+    def build_count(self, item_type: str) -> None:
+        with v3.VFadeTransition(mode="out-in"):
+            html.Span(
+                f"No {item_type}",
+                v_if=f"{self.list_state.name.max_index} === 0",
+            )
+            v3.VProgressCircular(
+                v_else_if=f"{self.list_state.name.max_index} == null",
+                indeterminate=True,
+                size=15,
+                width=3,
+            )
+            html.Span(
+                f"{{{{ {self.list_state.name.items}.length }}}} / {{{{ {self.list_state.name.max_index} }}}} {item_type}",
+                v_else=True,
+                key=(f"{self.list_state.name.items}.length",),
+            )
 
     def select_item(self, index: int) -> None:
         self.list_state.data.current_index = index
