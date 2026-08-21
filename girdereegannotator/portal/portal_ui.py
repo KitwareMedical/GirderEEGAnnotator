@@ -4,7 +4,7 @@ from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from undo_stack import Signal
 
-from girdereegannotator.database.models import BIDSDataset, EEGFileset
+from girdereegannotator.database.models import Dataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
 from girdereegannotator.utils.components import Button
 
@@ -18,7 +18,7 @@ from .components.filters.search_filter import SearchState
 
 @dataclass
 class PortalState:
-    current_dataset: BIDSDataset = field(default_factory=BIDSDataset)
+    current_dataset: Dataset = field(default_factory=Dataset)
     current_eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
     dataset_list_state: DatasetListState = field(default_factory=DatasetListState)
     eeg_fileset_list_state: EEGFilesetListState = field(default_factory=EEGFilesetListState)

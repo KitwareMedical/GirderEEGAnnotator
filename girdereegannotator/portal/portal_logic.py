@@ -4,7 +4,7 @@ from collections.abc import Callable
 from trame_server import Server
 from undo_stack import Signal
 
-from girdereegannotator.database.models import BIDSDataset, EEGFileset
+from girdereegannotator.database.models import Dataset, EEGFileset
 from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.portal.components.filters.status_filter import Status
 from girdereegannotator.utils.base_logic import BaseLogic
@@ -89,7 +89,7 @@ class PortalLogic(BaseLogic[PortalState]):
         self.eeg_fileset_unselected()
 
     def _reset_dataset(self) -> None:
-        self.current_dataset.set_dataclass(BIDSDataset())
+        self.current_dataset.set_dataclass(Dataset())
         self._reset_eeg_fileset()
         self._refresh_eeg_fileset_list()
 
@@ -100,7 +100,7 @@ class PortalLogic(BaseLogic[PortalState]):
         elif breadcrumbs_element == BreadcrumbsElement.DATASET:
             self._reset_eeg_fileset()
 
-    def _on_dataset_selected(self, dataset: BIDSDataset) -> None:
+    def _on_dataset_selected(self, dataset: Dataset) -> None:
         self.current_dataset.set_dataclass(dataset)
         self._load_next_eeg_filesets()
 

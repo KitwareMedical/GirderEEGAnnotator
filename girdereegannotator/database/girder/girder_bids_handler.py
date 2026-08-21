@@ -11,12 +11,13 @@ from girdereegannotator.utils.eeg import filter_eeg
 
 from ..models import (
     AnnotationFile,
+    AnnotationStatus,
     Asset,
-    BIDSDataset,
-    BIDSExtension,
-    BIDSSuffix,
+    Dataset,
     EEGFile,
     EEGFileset,
+    FileExtension,
+    FileSuffix,
     GirderModel,
 )
 
@@ -33,8 +34,8 @@ class GirderBIDSHandler:
     def __init__(self, girder_client: GirderClient):
         self.girder_client = girder_client
         self.resource = GirderBIDSResource()
-        self.suffix = BIDSSuffix()
-        self.ext = BIDSExtension()
+        self.suffix = FileSuffix()
+        self.ext = FileExtension()
 
     @staticmethod
     def _extract_file_base_name(filename: str, suffix: str, extension: str) -> str:
@@ -47,7 +48,7 @@ class GirderBIDSHandler:
     def _upload_asset_to_file(self, file_id: str, asset: Asset) -> None:
         self.girder_client.uploadFileToItem(file_id, asset.path, filename=asset.name)
 
-    def _get_derivative_dataset(self, derivative_folder_id: str, dataset_desc: dict[str, Any]) -> BIDSDataset:
+    def _get_derivative_dataset(self, derivative_folder_id: str, dataset_desc: dict[str, Any]) -> Dataset:
         derivative_dataset_desc = {**dataset_desc, "DatasetType": "derivative", "GeneratedBy": "GirderEEGAnnotator"}
 
         return self.girder_client.createResource(
@@ -175,8 +176,12 @@ class GirderBIDSHandler:
 
         eeg_fileset.annotations = self._find_annotation_files(eeg_fileset)
 
+        eeg_fileset.validated = (
+            sum(annotation.status == AnnotationStatus.VALIDATED for annotation in eeg_fileset.annotations) >= 3
+        )
+
     def list_eeg_filesets(
-        self, dataset: BIDSDataset, offset: int = 0, limit: int = 15, search_text: str | None = None
+        self, dataset: Dataset, offset: int = 0, limit: int = 15, search_text: str | None = None
     ) -> list[EEGFileset]:
         eeg_fileset_list = []
         eeg_files = self.girder_client.get(
@@ -194,9 +199,9 @@ class GirderBIDSHandler:
         for eeg_file in eeg_files:
             eeg_fileset = EEGFileset(
                 name=eeg_file["name"],
-                metadata=eeg_file["meta"],
+                metadata=eeg_file["bids_metadata"],
                 raw_eeg=EEGFile(_id=eeg_file["_id"], name=eeg_file["name"]),
-                upload_dataset_id=dataset.derivative_dataset_id,
+                upload_dataset_id=dataset.upload_dataset_id,
             )
             self.get_eeg_files(eeg_fileset)
 
@@ -206,7 +211,7 @@ class GirderBIDSHandler:
 
     def list_datasets(
         self, collection_id: str, offset: int = 0, limit: int = 15, search_text: str | None = None
-    ) -> list[BIDSDataset]:
+    ) -> list[Dataset]:
         dataset_list = []
         for dataset in self.girder_client.get(
             self.resource.dataset,
@@ -223,11 +228,11 @@ class GirderBIDSHandler:
             )
 
             dataset_list.append(
-                BIDSDataset(
+                Dataset(
                     _id=dataset["_id"],
                     name=dataset["name"],
                     metadata={key: str(value) for key, value in dataset["dataset_description"].items()},
-                    derivative_dataset_id=derivative_dataset["_id"],
+                    upload_dataset_id=derivative_dataset["_id"],
                 )
             )
 
