@@ -154,6 +154,7 @@ class PortalLogic(BaseLogic[PortalState]):
         ui.dataset_list.set_load_callback(self._load_next_datasets)
 
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
+        ui.eeg_fileset_filters.annotator_updated.connect(self._refresh_eeg_fileset_list)
         ui.eeg_fileset_filters.search_clicked.connect(self._refresh_eeg_fileset_list)
         ui.eeg_fileset_filters.status_clicked.connect(self._refresh_eeg_fileset_list)
         ui.eeg_fileset_list.set_load_callback(self._load_next_eeg_filesets)

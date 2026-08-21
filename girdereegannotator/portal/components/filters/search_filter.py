@@ -28,7 +28,6 @@ class SearchFilter(v3.VForm):
                 variant="solo",
                 flat=True,
                 density="comfortable",
-                width=200,
                 hide_details=True,
                 clearable=True,
                 click_clear=on_search_clicked,
