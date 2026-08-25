@@ -5,13 +5,14 @@ theme:
       dark: false
       colors:
         primary: "rgb(38, 112, 145)"
-        secondary: "rgb(52, 153, 145)"
+        secondary: "rgb(52, 153, 180)"
         item: "rgb(224, 240, 243)"
         surface: "rgb(255, 255, 255)"
         surface-variant: "rgb(230, 236, 241)"
         background: "rgb(222, 239, 244)"
         on-background: "rgb(28, 48, 57)"
         on-surface: "rgb(42, 58, 65)"
+        on-surface-variant: "rgb(42, 58, 65)"
         error: "rgb(204, 68, 75)"
         success: "rgb(48, 145, 105)"
         warning: "rgb(218, 158, 52)"

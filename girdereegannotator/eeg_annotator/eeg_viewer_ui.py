@@ -14,7 +14,7 @@ from girdereegannotator.utils.load_status import (
 
 @dataclass
 class EEGViewerState:
-    load_status: LoadStatus = LoadStatus.NOT_LOADED
+    load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
     eeg_file: Asset = field(default_factory=Asset)
     annotation_file: Asset = field(default_factory=Asset)
@@ -28,8 +28,9 @@ class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
         self._init_typed_state(self.state, EEGViewerState)
 
         with self:
-            LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
-            with v3.VFadeTransition(mode="out-in"):
+            with html.Div(style="height: 5px;"):
+                LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
+            with html.Div(style="height: calc(100% - 5px);"), v3.VFadeTransition(mode="out-in"):
                 LoadErrorMessage(
                     v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message}",
                     status_message=self.name.status_message,

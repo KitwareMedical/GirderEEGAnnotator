@@ -27,7 +27,7 @@ class AuthenticationUI(html.Div, BaseUI[AuthenticationState]):
                 v_model=self.name.is_menu_visible,
                 user_state=self.get_sub_state(self.name.user_state),
             )
-            Button(v_else=True, icon="mdi-account")
+            Button(v_else=True, icon="mdi-account", color="secondary")
 
         self.auth_dialog = LoginDialog(
             v_if=f"!{self.name.user_state._id}", login_state=self.get_sub_state(self.name.login_state)

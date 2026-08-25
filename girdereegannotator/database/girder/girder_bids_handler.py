@@ -175,7 +175,7 @@ class GirderBIDSHandler:
 
         eeg_fileset.annotations = self._find_annotation_files(eeg_fileset)
 
-    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int = 0, limit: int = 20) -> list[EEGFileset]:
+    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int = 0, limit: int = 15) -> list[EEGFileset]:
         eeg_fileset_list = []
         eeg_files = self.girder_client.get(
             self.resource.file,
@@ -201,7 +201,7 @@ class GirderBIDSHandler:
 
         return eeg_fileset_list
 
-    def list_datasets(self, collection_id: str, offset: int = 0, limit: int = 20) -> list[BIDSDataset]:
+    def list_datasets(self, collection_id: str, offset: int = 0, limit: int = 15) -> list[BIDSDataset]:
         dataset_list = []
         for dataset in self.girder_client.get(
             self.resource.dataset,
