@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-08-25)
+
+### Features
+
+- **infinite scroll**: Add manual infinite scroll to paginate database queries
+  ([`3003d48`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/3003d48979625506e93c155f019e8dabc582091e))
+
+### Refactoring
+
+- **list state**: Let list state handle its own load status
+  ([`af69aae`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/af69aaec93364576470d52d95a60c0c72fe0ef86))
+
+
 ## v1.7.0 (2026-08-19)
 
 ### Chores
