@@ -53,6 +53,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self.data.nav_state.window = NavigationWindow.ANNOTATOR
 
     def _on_eeg_fileset_unselected(self) -> None:
+        self._eeg_annotator_logic.reset_state()
         self.data.nav_state.window = NavigationWindow.PORTAL
 
     def set_ui(self, ui: AnnotatorAppUI) -> None:

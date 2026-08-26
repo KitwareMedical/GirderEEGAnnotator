@@ -60,7 +60,7 @@ class GirderBIDSHandler:
         self.naming = BIDSNamingStrategy()
         self.processor = EEGProcessor(self.naming)
 
-    def _load_asset_from_file(self, file: EEGFile) -> GirderModel | None:
+    def _load_asset_from_file(self, file: EEGFile | EEGFileset) -> GirderModel | None:
         assets = self.girder_client.listFile(itemId=file._id)
         return next(assets, None)
 
@@ -197,7 +197,7 @@ class GirderBIDSHandler:
                     "eeg": filtered_eeg_file,
                     "annotations": annotations,
                     "validated": (
-                        sum(annotation.status == AnnotationStatus.VALIDATED for annotation in annotations)
+                        sum(annotation.status == AnnotationStatus.DONE for annotation in annotations)
                         >= self.validation_threshold
                     ),
                 }

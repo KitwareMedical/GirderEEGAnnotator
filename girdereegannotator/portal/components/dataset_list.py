@@ -10,16 +10,15 @@ from .expandable_list import ExpandableList
 
 @dataclass
 class DatasetListState:
-    current_index: int | None = None
     items: list[Dataset] = field(default_factory=list)
+    excluded_ids: list[str] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
-    max_index: int | None = None
 
 
 class DatasetList(ExpandableList[DatasetListState, Dataset]):
-    def __init__(self, list_state: TypedState[DatasetListState], **kwargs) -> None:
-        super().__init__(list_state=list_state, **kwargs)
+    def __init__(self, item_state: TypedState[Dataset], list_state: TypedState[DatasetListState], **kwargs) -> None:
+        super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
         with self.action_slot:
             self.build_select_item_button(text="Open", prepend_icon="mdi-folder")

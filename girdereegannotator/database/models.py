@@ -50,8 +50,8 @@ class EEGFile(Model): ...
 
 class AnnotationStatus(Enum):
     IN_PROGRESS = auto()
-    TO_VALIDATE = auto()
-    VALIDATED = auto()
+    IN_REVIEW = auto()
+    DONE = auto()
 
 
 @dataclass

@@ -8,7 +8,7 @@ from girdereegannotator.database.models import Dataset, EEGFileset
 from girdereegannotator.utils.base_ui import BaseUI
 from girdereegannotator.utils.components import Button
 
-from .components.breadcrumbs import Breadcrumbs
+from .components.breadcrumbs import Breadcrumbs, BreadcrumbsElement
 from .components.dataset_filters import DatasetFilters
 from .components.dataset_list import DatasetList, DatasetListState
 from .components.eeg_fileset_filters import EEGFilesetFilters, EEGFilesetFiltersState
@@ -18,6 +18,7 @@ from .components.filters.search_filter import SearchState
 
 @dataclass
 class PortalState:
+    current_breadcrumbs_element: BreadcrumbsElement = BreadcrumbsElement.ROOT
     current_dataset: Dataset = field(default_factory=Dataset)
     current_eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
     dataset_list_state: DatasetListState = field(default_factory=DatasetListState)
@@ -34,26 +35,38 @@ class PortalUI(html.Div, BaseUI[PortalState]):
         self._init_typed_state(self.state, PortalState)
 
         with self, v3.VFadeTransition(mode="out-in"):
-            with html.Div(v_if=f"!{self.name.current_dataset.name}", classes="fill-height"):
+            with html.Div(
+                v_if=f"{self.name.current_breadcrumbs_element} == {BreadcrumbsElement.ROOT.value}",
+                classes="fill-height",
+            ):
                 self.dataset_filters = DatasetFilters(filter_state=self.get_sub_state(self.name.dataset_filter_state))
-                self.dataset_list = DatasetList(list_state=self.get_sub_state(self.name.dataset_list_state))
+                self.dataset_list = DatasetList(
+                    item_state=self.get_sub_state(self.name.current_dataset),
+                    list_state=self.get_sub_state(self.name.dataset_list_state),
+                )
 
-            with html.Div(v_else_if=f"!{self.name.current_eeg_fileset.name}", classes="fill-height"):
+            with html.Div(
+                v_else_if=f"{self.name.current_breadcrumbs_element} == {BreadcrumbsElement.DATASET.value}",
+                classes="fill-height",
+            ):
                 self.eeg_fileset_filters = EEGFilesetFilters(
                     filter_state=self.get_sub_state(self.name.eeg_fileset_filter_state)
                 )
-                self.eeg_fileset_list = EEGFilesetList(list_state=self.get_sub_state(self.name.eeg_fileset_list_state))
+                self.eeg_fileset_list = EEGFilesetList(
+                    item_state=self.get_sub_state(self.name.current_eeg_fileset),
+                    list_state=self.get_sub_state(self.name.eeg_fileset_list_state),
+                )
 
     def build_breadcrumbs(self, **kwargs) -> None:
         self.breadcrumbs_ui = Breadcrumbs(
-            dataset_state=self.get_sub_state(self.name.current_dataset),
-            eeg_fileset_state=self.get_sub_state(self.name.current_eeg_fileset),
+            current_breadcrumbs_element=self.name.current_breadcrumbs_element,
+            dataset_name=self.name.current_dataset.name,
+            eeg_fileset_name=self.name.current_eeg_fileset.name,
             **kwargs,
         )
 
     def build_toolbar(self) -> None:
         Button(
-            v_if=f"!{self.name.current_eeg_fileset.name}",
             click=self.refresh_clicked,
             icon="mdi-refresh",
             tooltip="Refresh list",

@@ -31,8 +31,7 @@ def create_async_task(
     async def async_task() -> None:
         async with tracker:
             if iscoroutinefunction(callable_method):
-                await callable_method(*args)
-            else:
-                callable_method(*args)
+                return await callable_method(*args)
+            return callable_method(*args)
 
     return create_task(async_task())

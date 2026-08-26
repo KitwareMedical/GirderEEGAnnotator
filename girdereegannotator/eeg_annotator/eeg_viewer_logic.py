@@ -6,6 +6,7 @@ from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
 
 from girdereegannotator.database.models import (
+    AnnotationFile,
     Asset,
     DatabaseError,
     EEGFileset,
@@ -32,6 +33,12 @@ def is_eeg_file(file: Asset) -> bool:
 
 def is_annotation_file(file: Asset) -> bool:
     return file.name.endswith(FileExtension.annotation)
+
+
+def upsert_annotation(annotations: list[AnnotationFile], new_annotation: AnnotationFile) -> list[AnnotationFile]:
+    if any(ann._id == new_annotation._id for ann in annotations):
+        return [new_annotation if ann._id == new_annotation._id else ann for ann in annotations]
+    return [*annotations, new_annotation]
 
 
 class EEGViewerLogic(BaseLogic[EEGViewerState]):
@@ -102,6 +109,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         if self.task and not self.task.done():
             self.task.cancel()
         self.task = self.create_async_task(_load)
+        return self.task
 
     def save_annotations(self, eeg_fileset: EEGFileset) -> None:
         if self._current_tmpdir is None:
@@ -112,5 +120,5 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         if annotation_file.path is None or not Path(annotation_file.path).exists():
             raise FileNotFoundError(f"Annotation file ({annotation_file.path}) does not exist")
 
-        annotation_file = self.ctrl.save_annotations(eeg_fileset, annotation_file)
-        eeg_fileset.annotations.append(annotation_file)
+        annotation_file: AnnotationFile = self.ctrl.save_annotations(eeg_fileset, annotation_file)
+        eeg_fileset.annotations = upsert_annotation(eeg_fileset.annotations, annotation_file)

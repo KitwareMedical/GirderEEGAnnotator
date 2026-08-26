@@ -11,9 +11,10 @@ from girdereegannotator.utils.components import Button
 
 class Status(Enum):
     UNDEFINED = "All"
-    TO_ANNOTATE = "To annotate"
-    TO_VALIDATE = "To validate"
-    VALIDATED = "Validated"
+    TO_DO = "To do"
+    IN_PROGRESS = "In progress"
+    IN_REVIEW = "In review"
+    DONE = "Done"
 
 
 @dataclass
@@ -33,10 +34,11 @@ class StatusFilter(v3.VBtnToggle):
         status_state.bind_changes({status_state.name.status: on_status_clicked})
 
         status_buttons = [
-            {"status": Status.UNDEFINED.value, "color": "secondary"},
-            {"status": Status.TO_ANNOTATE.value, "color": "warning"},
-            {"status": Status.TO_VALIDATE.value, "color": "info"},
-            {"status": Status.VALIDATED.value, "color": "success"},
+            {"status": Status.UNDEFINED.value, "color": "undefined"},
+            {"status": Status.TO_DO.value, "color": "secondary"},
+            {"status": Status.IN_PROGRESS.value, "color": "warning"},
+            {"status": Status.IN_REVIEW.value, "color": "info"},
+            {"status": Status.DONE.value, "color": "success"},
         ]
 
         with self:
