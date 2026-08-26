@@ -20,7 +20,7 @@ class EEGAnnotatorState:
 class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     previous_clicked = Signal()
     next_clicked = Signal()
-    save_annotations_clicked = Signal()
+    save_clicked = Signal()
 
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="fill-height", **kwargs)
@@ -51,7 +51,7 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                 v3.VSpacer()
                 Button(
                     icon="mdi-content-save-outline",
-                    click=self.save_annotations_clicked,
+                    click=self.save_clicked,
                     tooltip="Save annotations",
                     tooltip_location="bottom start",
                 )

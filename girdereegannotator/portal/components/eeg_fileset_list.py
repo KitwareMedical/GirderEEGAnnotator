@@ -21,7 +21,7 @@ class EEGFilesetListState:
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
     def __init__(
-        self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
+        self, user_id: str, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
     ) -> None:
         super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
@@ -37,7 +37,8 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         with self.expand_slot:
             html.Div("Annotations", classes="text-secondary text-subtitle-1")
             AnnotationList(
-                eeg_id=self.item_state.name._id,
+                user_id=user_id,
+                fileset_id=self.item_state.name._id,
                 annotations=f"{self.item}.annotations",
                 select_callable=self.select_item,
             )

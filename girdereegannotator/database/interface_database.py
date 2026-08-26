@@ -42,7 +42,7 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    def save_annotations(self, eeg_fileset: EEGFileset, eeg_annotation_file: AnnotationFile) -> AnnotationFile:
+    def save_annotations_file(self, eeg_fileset: EEGFileset, eeg_annotation_file: Asset) -> AnnotationFile:
         pass
 
 

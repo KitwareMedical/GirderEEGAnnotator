@@ -45,7 +45,12 @@ class PortalLogic(BaseLogic[PortalState]):
         )
 
         self.eeg_fileset_list_logic.bind_changes(
-            {(self.eeg_fileset_list_logic.name.items, self.eeg_fileset_list_logic.name.filtered_out_ids): self._count_eeg_filesets_per_status}
+            {
+                (
+                    self.eeg_fileset_list_logic.name.items,
+                    self.eeg_fileset_list_logic.name.filtered_out_ids,
+                ): self._count_eeg_filesets_per_status
+            }
         )
         self.bind_changes(
             {
@@ -211,7 +216,7 @@ class PortalLogic(BaseLogic[PortalState]):
             self.eeg_fileset_list_logic.exclude_item(updated_fileset)
 
     def set_current_user(self, user: User) -> None:
-        self.current_user_id = user._id
+        self.data.me = user._id
 
     def set_ui(self, ui: PortalUI) -> None:
         # Toolbar bindings

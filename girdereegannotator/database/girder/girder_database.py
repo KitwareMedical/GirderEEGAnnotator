@@ -138,4 +138,4 @@ class GirderDatabase(DatabaseInterface):
 
     def save_annotations(self, eeg_fileset: EEGFileset, annotation: Asset) -> AnnotationFile:
         user = self.get_me()
-        return self.bids_handler.upload_annotation(eeg_fileset, annotation, user._id)
+        return self.bids_handler.upload_annotations_file(eeg_fileset, annotation, user._id)

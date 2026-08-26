@@ -17,7 +17,7 @@ class RCAView:
         self.window_size = {"w": 0, "h": 0}
         self.tmp_annotation_asset = Asset(name="tmp_annotation_file.tsv")
 
-    def save_annotations(self, annotation_file_path: str) -> None:
+    def save_annotations_file(self, annotation_file_path: str) -> None:
         shutil.copy(self.tmp_annotation_asset.path, annotation_file_path)
 
     def set_eeg_file(self, dir_path: str, eeg_file_path: str) -> None:

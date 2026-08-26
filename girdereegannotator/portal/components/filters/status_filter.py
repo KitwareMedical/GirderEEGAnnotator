@@ -31,11 +31,19 @@ class StatusFilter(v3.VBtnToggle):
         )
 
         status_buttons = [
-            {"status": Status.UNDEFINED.value, "color": "undefined"},
-            {"status": Status.TO_DO.value, "color": "secondary"},
-            {"status": Status.IN_PROGRESS.value, "color": "warning"},
-            {"status": Status.IN_REVIEW.value, "color": "info"},
-            {"status": Status.DONE.value, "color": "success"},
+            {"status": Status.UNDEFINED.value, "color": "undefined", "tooltip": None},
+            {"status": Status.TO_DO.value, "color": "secondary", "tooltip": "Show EEGs with 0 annotations"},
+            {
+                "status": Status.IN_PROGRESS.value,
+                "color": "warning",
+                "tooltip": "Show EEGs with at least 1 annotations in progress",
+            },
+            {
+                "status": Status.IN_REVIEW.value,
+                "color": "info",
+                "tooltip": "Show EEGs with at least 1 annotations in review",
+            },
+            {"status": Status.DONE.value, "color": "success", "tooltip": "Show annotated and approved EEGs"},
         ]
 
         with self:
@@ -43,8 +51,11 @@ class StatusFilter(v3.VBtnToggle):
                 with Button(
                     classes="mx-1 status-button",
                     value=status_button["status"],
-                    active_color=status_button["color"],
+                    color=status_button["color"],
                     width=130,
+                    tooltip=status_button["tooltip"],
+                    tooltip_open_delay=800,
+                    tooltip_location="top",
                 ):
                     html.Div(status_button["status"])
                     with v3.VFadeTransition(mode="out-in"):

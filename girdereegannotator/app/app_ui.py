@@ -54,6 +54,8 @@ class AnnotatorAppUI:
                 ".annotator { height: 100vh; display: flex; flex-direction: column;}"
                 ".annotator-window { border: 2px dashed transparent; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }"
                 ".annotator-window:focus-within { border-color: orange; }"
+                ".annotation-list-item .v-list-item__content { display: flex; align-items: center; gap: 8px; }"
+                ".annotation-list-item:hover { background-color: color-mix(in srgb, rgb(var(--v-theme-surface)) 95%, rgb(var(--v-theme-primary))); }"
                 ".app-bar { height: 60px; display: flex; align-items: center; color: rgb(var(--v-theme-secondary)); }"
                 ".app-main { height: calc(100vh - 60px); padding-left: 8px; padding-right: 8px; padding-bottom: 8px }"
                 ".breadcrumbs-button { opacity: 1 !important; padding: 0px; } "

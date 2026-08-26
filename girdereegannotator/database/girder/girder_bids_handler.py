@@ -157,7 +157,7 @@ class GirderBIDSHandler:
     def get_next_annotation_file_name(self, eeg_fileset: EEGFileset) -> str:
         return self.naming.get_next_annotation_file_name(eeg_fileset)
 
-    def upload_annotation(self, eeg_fileset: EEGFileset, annotation: Asset, annotator_id: str) -> AnnotationFile:
+    def upload_annotations_file(self, eeg_fileset: EEGFileset, annotation: Asset, annotator_id: str) -> AnnotationFile:
         ctx = self.context.get_fileset(eeg_fileset._id)
         file = self._upload_file(
             annotation, ctx.derivatives_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True

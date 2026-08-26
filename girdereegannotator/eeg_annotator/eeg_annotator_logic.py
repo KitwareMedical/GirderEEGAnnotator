@@ -48,9 +48,9 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         load_task = self._viewer_logic.load_eeg_files(eeg_fileset, annotation_file, is_new_eeg_fileset)
         load_task.add_done_callback(self._on_load_task_finished)
 
-    def _save_annotations(self) -> None:
+    def _save_annotations_file(self) -> None:
         self._refresh_eeg_fileset()
-        self._viewer_logic.save_annotations(self.data.eeg_fileset)
+        self._viewer_logic.save_annotations_file(self.data.eeg_fileset)
 
     def reset_state(self) -> None:
         super().reset_state()
@@ -59,6 +59,6 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
     def set_ui(self, ui: EGGAnnotatorUI) -> None:
         self._viewer_logic.set_ui(ui.viewer_ui)
 
-        ui.save_annotations_clicked.connect(self._save_annotations)
+        ui.save_clicked.connect(self._save_annotations_file)
         ui.previous_clicked.connect(self.previous_clicked)
         ui.next_clicked.connect(self.next_clicked)
