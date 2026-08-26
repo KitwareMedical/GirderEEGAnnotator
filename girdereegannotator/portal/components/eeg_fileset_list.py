@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
 
+from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import EEGFileset
 from girdereegannotator.utils.load_status import LoadStatus
 
+from .eeg_annotation_list import AnnotationList
 from .expandable_list import ExpandableList
 
 
@@ -33,7 +35,24 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
             self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
 
         with self.expand_slot:
-            self.build_metadata(f"{self.item}.metadata")
+            html.Div("Annotations", classes="text-secondary text-subtitle-1")
+            AnnotationList(
+                eeg_id=self.item_state.name._id,
+                annotations=f"{self.item}.annotations",
+                select_callable=self.select_item,
+            )
+
+            v3.VDivider()
+
+            html.Div("Metadata", classes="text-secondary text-subtitle-1")
+            self.build_metadata(
+                f"{self.item}.metadata",
+            )
 
         with self.count_slot:
             self.build_count("EEG filesets")
+
+    def select_item(self, eeg_fileset_id: str, annotation_id: str | None = None) -> None:
+        eeg_fileset = next(it for it in self.list_state.data.items if it._id == eeg_fileset_id)
+        annotation = next((ann for ann in eeg_fileset.annotations if ann._id == annotation_id), None)
+        self.item_selected(eeg_fileset, annotation)

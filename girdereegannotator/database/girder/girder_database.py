@@ -126,7 +126,10 @@ class GirderDatabase(DatabaseInterface):
 
         if annotation_file is None:
             annotation_name = self.bids_handler.get_next_annotation_file_name(eeg_fileset)
-            annotation = Asset(annotation_name, str(Path(download_dir) / annotation_name))
+            annotation_path = Path(download_dir) / annotation_name
+            annotation_path.touch()
+            annotation = Asset(annotation_name, str(annotation_path))
+
         else:
             # Reload because annotation could have been updated
             annotation = self._download_file(annotation_file, download_dir, refresh=True)

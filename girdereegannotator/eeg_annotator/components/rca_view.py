@@ -1,9 +1,12 @@
+import shutil
 from pathlib import Path
 from typing import Any
 
 import libeegviz
 import numpy as np
 from PIL import Image
+
+from girdereegannotator.database.models import Asset
 
 
 class RCAView:
@@ -12,16 +15,25 @@ class RCAView:
         self._events = ["MouseMove", "LeftButtonPress", "RightButtonPress", "KeyDown"]
         self._cols, self._rows = 0, 0
         self.window_size = {"w": 0, "h": 0}
+        self.tmp_annotation_asset = Asset(name="tmp_annotation_file.tsv")
 
-    def set_files(self, file_path: str, annotation_file_path: str) -> None:
-        if not Path(file_path).exists():
-            raise Exception(f"{file_path} does not exist")
+    def save_annotations(self, annotation_file_path: str) -> None:
+        shutil.copy(self.tmp_annotation_asset.path, annotation_file_path)
 
-        self._context = libeegviz.create2(file_path, annotation_file_path)
+    def set_eeg_file(self, dir_path: str, eeg_file_path: str) -> None:
+        if not Path(eeg_file_path).exists():
+            raise Exception(f"{eeg_file_path} does not exist")
+
+        self.tmp_annotation_asset.path = str(Path(dir_path) / self.tmp_annotation_asset.name)
+
+        self._context = libeegviz.create2(eeg_file_path, self.tmp_annotation_asset.path)
 
     def set_annotation_file(self, annotation_file_path: str) -> None:
         if self._context is None:
             return
+
+        if not Path(annotation_file_path).exists():
+            raise Exception(f"{annotation_file_path} does not exist")
 
         libeegviz.load_annotations(self._context, annotation_file_path)
 

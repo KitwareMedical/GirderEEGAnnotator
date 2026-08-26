@@ -16,8 +16,8 @@ from girdereegannotator.utils.load_status import (
 class EEGViewerState:
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
-    eeg_file: Asset = field(default_factory=Asset)
-    annotation_file: Asset = field(default_factory=Asset)
+    eeg_asset: Asset = field(default_factory=Asset)
+    annotation_asset: Asset = field(default_factory=Asset)
 
 
 class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):

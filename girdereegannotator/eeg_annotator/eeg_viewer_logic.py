@@ -62,39 +62,48 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self._cleanup_current_tmpdir()
         self._current_tmpdir = tempfile.TemporaryDirectory()
 
-    def _set_files(self, file_path: str, annotation_file_path: str) -> None:
-        self.rca_view.set_files(file_path, annotation_file_path)
+    def _set_files(self, eeg_file_path: str) -> None:
+        self.rca_view.set_eeg_file(self._current_tmpdir.name, eeg_file_path)
         self.view_handler.update_size(None, self.rca_view.window_size)
 
-    def _load_eeg_files(self, eeg_fileset: EEGFileset) -> None:
-        self._create_tmp_dir()
+    def _set_annotation_file(self, annotation_file_path: str) -> None:
+        self.rca_view.set_annotation_file(annotation_file_path)
 
-        eeg_files: tuple[Asset, Asset] = self.ctrl.download_eeg_files(
+    def _load_eeg_files(
+        self, eeg_fileset: EEGFileset, annotation_file: AnnotationFile | None, is_new_eeg_fileset: bool
+    ) -> None:
+        if is_new_eeg_fileset or self._current_tmpdir is None:
+            self._create_tmp_dir()
+
+        eeg_assets: tuple[Asset, Asset] = self.ctrl.download_eeg_files(
             eeg_fileset,
             self._current_tmpdir.name,
-            annotation_file=eeg_fileset.annotations[0] if eeg_fileset.annotations else None,
+            annotation_file=annotation_file,
         )
-        eeg_file, annotation_file = eeg_files
+        eeg_asset, annotation_asset = eeg_assets
 
-        if not is_eeg_file(eeg_file):
-            raise FileValidationError(f"EEG file {eeg_file.name} is invalid")
+        if not is_eeg_file(eeg_asset):
+            raise FileValidationError(f"EEG file {eeg_asset.name} is invalid")
 
-        if not is_annotation_file(annotation_file):
-            raise FileValidationError(f"Annotation file {annotation_file.name} is invalid")
+        if not is_annotation_file(annotation_asset):
+            raise FileValidationError(f"Annotation file {annotation_asset.name} is invalid")
 
-        self.data.eeg_file = eeg_file
-        self.data.annotation_file = annotation_file
+        self.data.eeg_asset = eeg_asset
+        self.data.annotation_asset = annotation_asset
 
         try:
-            self._set_files(self.data.eeg_file.path, self.data.annotation_file.path)
+            if is_new_eeg_fileset:
+                self._set_files(self.data.eeg_asset.path)
+            self._set_annotation_file(self.data.annotation_asset.path)
+
         except Exception as e:
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
-    def load_eeg_files(self, eeg_fileset: EEGFileset) -> Task:
+    def load_eeg_files(self, eeg_fileset: EEGFileset, annotation_file: AnnotationFile | None, is_new_eeg_fileset: bool) -> Task:
         async def _load() -> None:
             try:
                 updated_eeg_fileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
-                await to_thread(self._load_eeg_files, updated_eeg_fileset)
+                await to_thread(self._load_eeg_files, updated_eeg_fileset, annotation_file, is_new_eeg_fileset)
                 self.data.load_status = LoadStatus.LOADED
 
             except (FileValidationError, AnnotatorLoadingError, DatabaseError) as e:
@@ -115,7 +124,9 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         if self._current_tmpdir is None:
             raise RuntimeError("Temporary directory is not initialized")
 
-        annotation_file = self.data.annotation_file
+        annotation_file = self.data.annotation_asset
+
+        self.rca_view.save_annotations(self.data.annotation_asset.path)
 
         if annotation_file.path is None or not Path(annotation_file.path).exists():
             raise FileNotFoundError(f"Annotation file ({annotation_file.path}) does not exist")
