@@ -134,5 +134,8 @@ class GirderDatabase(DatabaseInterface):
         return eeg, annotation
 
     def save_annotations(self, eeg_fileset: EEGFileset, annotation: Asset) -> AnnotationFile:
+        if eeg_fileset.validated:
+            raise DatabaseError("This EEG is validated. No annotations can be saved.")
+
         user = self.get_me()
         return self.bids_handler.upload_annotation(eeg_fileset, annotation, user._id)

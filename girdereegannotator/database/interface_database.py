@@ -32,6 +32,10 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
+    def refresh_eeg_fileset(self, eeg_fileset: EEGFileset) -> EEGFileset:
+        pass
+
+    @abstractmethod
     def download_eeg_files(
         self,
         dataset: Dataset,

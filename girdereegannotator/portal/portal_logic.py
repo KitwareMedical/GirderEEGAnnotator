@@ -42,8 +42,18 @@ class PortalLogic(BaseLogic[PortalState]):
             on_count=self._count_eeg_filesets_per_status,
         )
 
-        # self.eeg_fileset_list_logic.bind_changes({self.eeg_fileset_list_logic.name.items: self._count_eeg_filesets_per_status})
         self.bind_changes({self.name.current_breadcrumbs_element: self._on_breadcrumbs_navigated})
+
+    @property
+    def current_eeg_fileset_index(self) -> int:
+        return next(
+            (
+                i
+                for i, item in enumerate(self.eeg_fileset_list_logic.data.items)
+                if item._id == self.current_eeg_fileset.data._id
+            ),
+            0,
+        )
 
     def _count_eeg_filesets_per_status(self, eeg_fileset_list: list[EEGFileset]) -> None:
         self.data.eeg_fileset_filter_state.status_state.counts = {
@@ -93,16 +103,14 @@ class PortalLogic(BaseLogic[PortalState]):
     def fetch_datasets(self) -> Task | None:
         return self.dataset_list_logic.fetch_item_list(search_text=self.data.dataset_filter_state.search_text)
 
-    def fetch_eeg_filesets(self, reset_status_counts: bool = False) -> Task | None:
+    def fetch_eeg_filesets(self) -> Task | None:
+        self.data.eeg_fileset_filter_state.status_state.counts = {}
+
         if self.current_dataset.data._id is None:
-            self.data.eeg_fileset_filter_state.status_state.counts = {}
             self.data.eeg_fileset_filter_state.status_state.status = Status.UNDEFINED
             self.data.eeg_fileset_filter_state.annotator_state.annotator = Annotator.UNDEFINED
             self.eeg_fileset_list_logic.reset()
             return None
-
-        if reset_status_counts:
-            self.data.eeg_fileset_filter_state.status_state.counts = {}
 
         return self.eeg_fileset_list_logic.fetch_item_list(
             dataset=self.current_dataset.get_dataclass(),
@@ -116,7 +124,7 @@ class PortalLogic(BaseLogic[PortalState]):
             self.fetch_datasets()
         else:
             self.current_eeg_fileset.set_dataclass(EEGFileset())
-            self.fetch_eeg_filesets(reset_status_counts=True)
+            self.fetch_eeg_filesets()
 
     def _on_dataset_selected(self, dataset: Dataset) -> None:
         self.current_dataset.set_dataclass(dataset)
@@ -152,14 +160,29 @@ class PortalLogic(BaseLogic[PortalState]):
     def step_eeg_selection(self, offset: int) -> None:
         """Navigates to next/previous EEG items, pulling next pages if necessary."""
         eeg_fileset_list = self.data.eeg_fileset_list_state.items
-        current_index = next(
-            (i for i, item in enumerate(eeg_fileset_list) if item._id == self.current_eeg_fileset.data._id)
-        )
+        if not eeg_fileset_list or not offset:
+            return
 
-        target_index = (current_index + offset) % len(eeg_fileset_list)
-        # TODO Refresh + check if matches current filters
+        target_index = self.current_eeg_fileset_index
 
-        self._on_eeg_fileset_selected(self.data.eeg_fileset_list_state.items[target_index])
+        direction = 1 if offset > 0 else -1
+        total_items = len(eeg_fileset_list)
+
+        # Iterate through items until a matching filter is found or all items are exhausted
+        for i in range(1, total_items + 1):
+            target_index = (target_index + (i * direction)) % total_items
+            candidate: EEGFileset = self.ctrl.refresh_eeg_fileset(eeg_fileset_list[target_index])
+            self.eeg_fileset_list_logic.update_item(candidate)
+
+            if self._matches_eeg_fileset_filter(candidate):
+                self.eeg_fileset_list_logic.include_item(candidate)
+                self._on_eeg_fileset_selected(candidate)
+                return
+
+            self.eeg_fileset_list_logic.exclude_item(candidate)
+
+        # Return to portal if nothing matches the filters anymore
+        self.data.current_breadcrumbs_element = BreadcrumbsElement.DATASET
 
     def select_previous_eeg(self) -> None:
         self.step_eeg_selection(-1)

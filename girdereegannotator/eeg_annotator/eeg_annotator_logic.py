@@ -23,6 +23,11 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
 
         self.bind_changes({self.name.eeg_fileset: self._on_eeg_fileset_updated})
 
+    def _refresh_eeg_fileset(self) -> None:
+        eeg_fileset = self.eeg_fileset.get_dataclass()
+        refreshed_eeg_fileset = self.ctrl.refresh_eeg_fileset(eeg_fileset)
+        self.eeg_fileset.set_dataclass(refreshed_eeg_fileset)
+
     def _on_eeg_fileset_updated(self, *_args) -> None:
         if self.eeg_fileset.data.name is not None:
             updated_eeg_fileset = self.eeg_fileset.get_dataclass()
@@ -42,6 +47,7 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         load_task.add_done_callback(self._on_load_task_finished)
 
     def _save_annotations(self) -> None:
+        self._refresh_eeg_fileset()
         self._viewer_logic.save_annotations(self.data.eeg_fileset)
 
     def reset_state(self) -> None:

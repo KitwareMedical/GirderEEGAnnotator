@@ -80,3 +80,11 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
 
     def update_item(self, updated_item: V) -> None:
         self.data.items = [updated_item if updated_item._id == item._id else item for item in self.data.items]
+
+    def exclude_item(self, item_to_exclude: V) -> None:
+        if item_to_exclude._id not in self.data.excluded_ids:
+            self.data.excluded_ids = [*self.data.excluded_ids, item_to_exclude._id]
+
+    def include_item(self, item_to_include: V) -> None:
+        if item_to_include._id in self.data.excluded_ids:
+            self.data.excluded_ids = [item_id for item_id in self.data.excluded_ids if item_id != item_to_include._id]
