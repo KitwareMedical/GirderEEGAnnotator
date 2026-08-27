@@ -21,25 +21,15 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
         list_state: TypedState[ExpandableListState[V]],
         on_load: Callable[..., list[V]],
         on_filter: Callable[[V], bool] | None = None,
-        on_count: Callable[..., None] | None = None,
     ):
         super().__init__(server, typed_state=list_state)
         self.load = on_load
-        self.count = on_count
         self.filter = on_filter
         self._fetch_task: Task | None = None
 
     def _cancel_task(self) -> None:
         if self._fetch_task and not self._fetch_task.done():
             self._fetch_task.cancel()
-
-    def _fetch_items(self, **kwargs) -> list[V]:
-        item_list = self.load(offset=0, limit=0, **kwargs)
-
-        if self.count is not None:
-            self.count(item_list)
-
-        return item_list
 
     def _filter_items(self, search_text: str | None = None) -> list[str]:
         excluded_ids = set()
@@ -65,9 +55,12 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
 
         async def _fetch_item_list_task() -> None:
             try:
-                self.data.items = await asyncio.to_thread(self._fetch_items, **kwargs)
+                self.data.items = await asyncio.to_thread(self.load, offset=0, limit=0, **kwargs)
                 self.data.excluded_ids = self._filter_items(search_text=search_text)
                 self.data.load_status = LoadStatus.LOADED
+
+                # Make sure to trigger change listeners
+                self.state.dirty(self.name.items)
 
             except asyncio.CancelledError:
                 pass

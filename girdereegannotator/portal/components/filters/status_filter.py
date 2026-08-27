@@ -50,14 +50,15 @@ class StatusFilter(v3.VBtnToggle):
                     width=130,
                 ):
                     html.Div(status_button["status"])
-                    html.Div(
-                        f"{{{{ {status_state.name.counts}['{status_button['status']}'] }}}} EEG",
-                        classes="text-caption",
-                        v_if=f"'{status_button['status']}' in {status_state.name.counts}",
-                    )
-                    v3.VProgressCircular(
-                        v_else=True,
-                        indeterminate=True,
-                        size=15,
-                        width=3,
-                    )
+                    with v3.VFadeTransition(mode="out-in"):
+                        html.Div(
+                            f"{{{{ {status_state.name.counts}['{status_button['status']}'] }}}} EEG",
+                            classes="text-caption",
+                            v_if=f"'{status_button['status']}' in {status_state.name.counts}",
+                        )
+                        v3.VProgressCircular(
+                            v_else=True,
+                            indeterminate=True,
+                            size=15,
+                            width=3,
+                        )

@@ -62,6 +62,7 @@ class ExpandableListItem(v3.VListItem):
 
 class ExpandableList(html.Div, Generic[T, V]):
     item_selected = Signal(V)
+    item_expanded = Signal(V)
 
     def __init__(self, item_state: TypedState[V], list_state: TypedState[T], **kwargs) -> None:
         super().__init__(
@@ -88,10 +89,8 @@ class ExpandableList(html.Div, Generic[T, V]):
                 classes="expandable-list__content",
             ):
                 with (
-                    v3.VList(classes="expandable-list__content-list"),
-                    html.Div(
-                        v_for=f"{self.item} in {list_state.name.items}",
-                    ),
+                    v3.VVirtualScroll(classes="expandable-list__content-list", items=(list_state.name.items,)),
+                    v3.Template(v_slot_default=f"{{ {self.item} }}"),
                     html.Div(
                         v_if=f"!{list_state.name.excluded_ids}.includes({self.item}._id)",
                     ),
@@ -134,10 +133,10 @@ class ExpandableList(html.Div, Generic[T, V]):
         with v3.VFadeTransition(mode="out-in"):
             html.Span(
                 f"No {item_type}",
-                v_if=f"{self.list_state.name.items}.length === 0",
+                v_if=f"{self._number_of_items} === 0",
             )
             html.Span(
-                f"{{{{ {self.list_state.name.items}.length }}}} {item_type}",
+                f"{{{{ {self._number_of_items} }}}} {item_type}",
                 v_else=True,
                 key=(f"{self.list_state.name.items}.length",),
             )
@@ -146,6 +145,14 @@ class ExpandableList(html.Div, Generic[T, V]):
         item = next(it for it in self.list_state.data.items if it._id == item_id)
         self.item_selected(item)
 
-    def expand_item(self, item_id: str) -> V:
-        item = next(it for it in self.list_state.data.items if it._id == item_id)
-        self.item_state.set_dataclass(item)
+    def expand_item(self, item_id: str) -> V | None:
+        if self.item_state.data._id == item_id:
+            item = None
+        else:
+            item = next(it for it in self.list_state.data.items if it._id == item_id)
+
+        self.item_expanded(item)
+
+    @property
+    def _number_of_items(self) -> str:
+        return f"{self.list_state.name.items}.length - {self.list_state.name.excluded_ids}.length"

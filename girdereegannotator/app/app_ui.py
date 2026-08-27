@@ -67,7 +67,7 @@ class AnnotatorAppUI:
                 ".expandable-list__content { height: calc(100% - 5px); }"
                 ".expandable-list__content-list { height: calc(100% - 30px); padding: 0px; }"
                 ".expandable-list__content-count { display: flex; justify-content: end; align-items: center; height: 30px; color: rgb(var(--v-theme-secondary)); }"
-                f".expandable-list-item {{ background-color: rgb(var(--v-theme-surface-variant)); margin-top: 4px; box-shadow: {box_shadow}; }}"
+                f".expandable-list-item {{ background-color: rgb(var(--v-theme-surface-variant)); margin-top: 4px; box-shadow: {box_shadow}; height: 50px; }}"
                 ".expandable-list-item--expanded { border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; box-shadow: none; }"
                 f".expansion-card {{ border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: {box_shadow}; }}"
                 ".image-display-area { height: calc(100% - 2px); padding: 2px; }"
