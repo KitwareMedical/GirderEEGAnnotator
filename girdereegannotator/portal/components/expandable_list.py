@@ -24,7 +24,7 @@ LoadCallback = Callable[[], Any]
 @dataclass
 class ExpandableListState(Generic[V]):
     items: list[V] = field(default_factory=list)
-    excluded_ids: list[str] = field(default_factory=list)
+    filtered_out_ids: list[str] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
 
@@ -92,7 +92,7 @@ class ExpandableList(html.Div, Generic[T, V]):
                     v3.VVirtualScroll(classes="expandable-list__content-list", items=(list_state.name.items,)),
                     v3.Template(v_slot_default=f"{{ {self.item} }}"),
                     html.Div(
-                        v_if=f"!{list_state.name.excluded_ids}.includes({self.item}._id)",
+                        v_if=f"!{list_state.name.filtered_out_ids}.includes({self.item}._id)",
                     ),
                 ):
                     with (
@@ -155,4 +155,4 @@ class ExpandableList(html.Div, Generic[T, V]):
 
     @property
     def _number_of_items(self) -> str:
-        return f"{self.list_state.name.items}.length - {self.list_state.name.excluded_ids}.length"
+        return f"{self.list_state.name.items}.length - {self.list_state.name.filtered_out_ids}.length"

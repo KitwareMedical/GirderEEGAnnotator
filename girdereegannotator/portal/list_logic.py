@@ -32,14 +32,14 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
             self._fetch_task.cancel()
 
     def _filter_items(self, search_text: str | None = None) -> list[str]:
-        excluded_ids = set()
+        filtered_out_ids = set()
         if search_text:
-            excluded_ids.update(item._id for item in self.data.items if search_text not in item.name)
+            filtered_out_ids.update(item._id for item in self.data.items if search_text not in item.name)
 
         if self.filter is not None:
-            excluded_ids.update(item._id for item in self.data.items if not self.filter(item))
+            filtered_out_ids.update(item._id for item in self.data.items if not self.filter(item))
 
-        return list(excluded_ids)
+        return list(filtered_out_ids)
 
     def reset(self) -> None:
         self._cancel_task()
@@ -56,7 +56,7 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
         async def _fetch_item_list_task() -> None:
             try:
                 self.data.items = await asyncio.to_thread(self.load, offset=0, limit=0, **kwargs)
-                self.data.excluded_ids = self._filter_items(search_text=search_text)
+                self.data.filtered_out_ids = self._filter_items(search_text=search_text)
                 self.data.load_status = LoadStatus.LOADED
 
                 # Make sure to trigger change listeners
@@ -74,10 +74,12 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
     def update_item(self, updated_item: V) -> None:
         self.data.items = [updated_item if updated_item._id == item._id else item for item in self.data.items]
 
-    def exclude_item(self, item_to_exclude: V) -> None:
-        if item_to_exclude._id not in self.data.excluded_ids:
-            self.data.excluded_ids = [*self.data.excluded_ids, item_to_exclude._id]
+    def exclude_item(self, item_id_to_exclude: str) -> None:
+        if item_id_to_exclude not in self.data.filtered_out_ids:
+            self.data.filtered_out_ids = [*self.data.filtered_out_ids, item_id_to_exclude]
 
-    def include_item(self, item_to_include: V) -> None:
-        if item_to_include._id in self.data.excluded_ids:
-            self.data.excluded_ids = [item_id for item_id in self.data.excluded_ids if item_id != item_to_include._id]
+    def include_item(self, item_id_to_include: str) -> None:
+        if item_id_to_include in self.data.filtered_out_ids:
+            self.data.filtered_out_ids = [
+                item_id for item_id in self.data.filtered_out_ids if item_id != item_id_to_include
+            ]

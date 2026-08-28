@@ -72,7 +72,6 @@ class EEGFileset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
     eeg: EEGFile = field(default_factory=EEGFile)
     annotations: list[AnnotationFile] = field(default_factory=list)
-    validated: bool = False
 
 
 @dataclass

@@ -90,7 +90,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         except Exception as e:
             raise AnnotatorLoadingError(f"Could not load file into annotator: {e}") from e
 
-    def load_eeg_files(self, eeg_fileset: EEGFileset) -> None:
+    def load_eeg_files(self, eeg_fileset: EEGFileset) -> Task:
         async def _load() -> None:
             try:
                 updated_eeg_fileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)

@@ -12,7 +12,7 @@ from .expandable_list import ExpandableList
 @dataclass
 class EEGFilesetListState:
     items: list[EEGFileset] = field(default_factory=list)
-    excluded_ids: list[str] = field(default_factory=list)
+    filtered_out_ids: list[str] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
 

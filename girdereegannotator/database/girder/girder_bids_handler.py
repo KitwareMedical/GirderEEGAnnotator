@@ -10,7 +10,6 @@ from girdereegannotator.utils.eeg import filter_eeg
 
 from ..models import (
     AnnotationFile,
-    AnnotationStatus,
     Asset,
     Dataset,
     EEGFile,
@@ -54,7 +53,6 @@ class GirderBIDSHandler:
     def __init__(self, girder_client: GirderClient):
         self.girder_client = girder_client
         self.resource = GirderBIDSResource()
-        self.validation_threshold = 3
 
         self.context = BIDSContextManager()
         self.naming = BIDSNamingStrategy()
@@ -191,15 +189,10 @@ class GirderBIDSHandler:
             filtered_eeg_file = eeg_fileset.eeg
 
         if filtered_eeg_file is not None:
-            annotations = self._find_annotation_files(eeg_fileset, filtered_eeg_file._id)
             kwargs.update(
                 {
                     "eeg": filtered_eeg_file,
-                    "annotations": annotations,
-                    "validated": (
-                        sum(annotation.status == AnnotationStatus.DONE for annotation in annotations)
-                        >= self.validation_threshold
-                    ),
+                    "annotations": self._find_annotation_files(eeg_fileset, filtered_eeg_file._id),
                 }
             )
 
