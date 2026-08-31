@@ -4,7 +4,7 @@ from trame_server import Server
 from undo_stack import Signal
 
 from girdereegannotator.database.models import (
-    AnnotationFile,
+    AnnotationsFile,
     AnnotationStatus,
     Dataset,
     EEGFileset,
@@ -76,7 +76,10 @@ class PortalLogic(BaseLogic[PortalState]):
         }
 
     def _is_eeg_fileset_validated(self, eeg_fileset: EEGFileset) -> bool:
-        return sum(ann.status == AnnotationStatus.DONE for ann in eeg_fileset.annotations) > self.validation_threshold
+        return (
+            sum(ann.status == AnnotationStatus.DONE for ann in eeg_fileset.annotations_files)
+            > self.validation_threshold
+        )
 
     def _matches_eeg_fileset_filter(
         self, eeg_fileset: EEGFileset, status: Status | None = None, annotator: Annotator | None = None
@@ -91,23 +94,23 @@ class PortalLogic(BaseLogic[PortalState]):
         if status not in [Status.DONE, Status.UNDEFINED] and is_validated:
             return False
 
-        annotations = eeg_fileset.annotations
+        annotations_files = eeg_fileset.annotations_files
         if status == Status.TO_DO:
-            return not any(annotations)
+            return not any(annotations_files)
 
         if annotator == Annotator.ME:
-            annotations = [ann for ann in annotations if ann.annotator_id == self.current_user_id]
+            annotations_files = [ann for ann in annotations_files if ann.annotator_id == self.current_user_id]
         elif annotator == Annotator.NOT_ME:
-            annotations = [ann for ann in annotations if ann.annotator_id != self.current_user_id]
+            annotations_files = [ann for ann in annotations_files if ann.annotator_id != self.current_user_id]
 
         if status == Status.IN_REVIEW:
-            return any(ann.status == AnnotationStatus.IN_REVIEW for ann in annotations)
+            return any(ann.status == AnnotationStatus.IN_REVIEW for ann in annotations_files)
 
         if status == Status.IN_PROGRESS:
-            return any(ann.status == AnnotationStatus.IN_PROGRESS for ann in annotations)
+            return any(ann.status == AnnotationStatus.IN_PROGRESS for ann in annotations_files)
 
         if status == Status.DONE:
-            return any(ann.status == AnnotationStatus.DONE for ann in annotations)
+            return any(ann.status == AnnotationStatus.DONE for ann in annotations_files)
 
         # Status.UNDEFINED
         return True
@@ -151,10 +154,12 @@ class PortalLogic(BaseLogic[PortalState]):
         self.data.current_breadcrumbs_element = BreadcrumbsElement.DATASET
         self.fetch_eeg_filesets()
 
-    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset, annotation_file: AnnotationFile | None = None) -> None:
+    def _on_eeg_fileset_selected(
+        self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None = None
+    ) -> None:
         self.current_eeg_fileset.set_dataclass(eeg_fileset)
         self.data.current_breadcrumbs_element = BreadcrumbsElement.EEG_FILESET
-        self.eeg_fileset_selected(eeg_fileset, annotation_file)
+        self.eeg_fileset_selected(eeg_fileset, annotations_file)
 
     def _on_dataset_expanded(self, dataset: Dataset | None) -> None:
         self.current_dataset.set_dataclass(dataset if dataset is not None else Dataset())

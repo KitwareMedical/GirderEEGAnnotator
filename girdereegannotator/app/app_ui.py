@@ -74,6 +74,7 @@ class AnnotatorAppUI:
                 f".expansion-card {{ border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: {box_shadow}; padding: 12px; }}"
                 ".image-display-area { height: calc(100% - 2px); padding: 2px; }"
                 ".load-error-message { display: flex; justify-content: center; align-items: center; height: 100%; }"
+                ".load-error-message span { min-width: 0; overflow-wrap: break-word; }"
                 ".load-progress .v-progress-linear__indeterminate { animation-duration: 1s; }"
                 ".metadata-content { display: flex; justify-content: space-between; align-items: center; gap:8px; }"
                 ".metadata-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"

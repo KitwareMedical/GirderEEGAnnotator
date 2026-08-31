@@ -55,7 +55,7 @@ class AnnotationStatus(Enum):
 
 
 @dataclass
-class AnnotationFile(EEGFile):
+class AnnotationsFile(EEGFile):
     annotator_id: str | None = None
     status: AnnotationStatus = AnnotationStatus.IN_PROGRESS
 
@@ -71,7 +71,7 @@ class EEGFilesetIdentifier:
 class EEGFileset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
     eeg: EEGFile = field(default_factory=EEGFile)
-    annotations: list[AnnotationFile] = field(default_factory=list)
+    annotations_files: list[AnnotationsFile] = field(default_factory=list)
 
 
 @dataclass

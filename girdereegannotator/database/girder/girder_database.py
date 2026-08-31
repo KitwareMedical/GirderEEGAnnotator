@@ -11,7 +11,7 @@ from girder_client import HttpError as GirderHTTPError
 from ..exceptions import AuthenticationError
 from ..interface_database import DatabaseInterface
 from ..models import (
-    AnnotationFile,
+    AnnotationsFile,
     Asset,
     DatabaseError,
     Dataset,
@@ -27,6 +27,16 @@ T = TypeVar("T", bound=Model)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+def handle_database_error(e: GirderHTTPError) -> DatabaseError:
+    if e.status == 401:
+        msg = "Unauthorized"
+    elif e.status == 403:
+        msg = "Access denied"
+    else:
+        msg = "Invalid request"
+    return DatabaseError(msg)
 
 
 class GirderDatabase(DatabaseInterface):
@@ -88,54 +98,80 @@ class GirderDatabase(DatabaseInterface):
         except GirderAuthenticationError as e:
             raise AuthenticationError("Wrong login or password") from e
         except GirderHTTPError as e:
-            raise AuthenticationError("Unknown error") from e
+            raise AuthenticationError(f"Authentication error: {handle_database_error(e)}") from e
 
         return self._user_as_dataclass(user)
 
     def get_me(self) -> User | None:
-        user = self.girder_client.get(path="user/me")
-        return self._user_as_dataclass(user) if user else None
+        try:
+            user = self.girder_client.get(path="user/me")
+            return self._user_as_dataclass(user) if user else None
+        except GirderHTTPError as e:
+            raise DatabaseError(f"Could not fetch current user: {handle_database_error(e)}") from e
 
     def list_datasets(self, _collection_id: str | None = None, **kwargs) -> list[Dataset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_datasets(self.collection_id, **kwargs)
+        try:
+            return self.bids_handler.list_datasets(self.collection_id, **kwargs)
+        except GirderHTTPError as e:
+            raise DatabaseError(f"Could not list datasets: {handle_database_error(e)}") from e
 
     def list_eeg_filesets(self, dataset: Dataset, **kwargs) -> list[EEGFileset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_eeg_filesets(dataset, **kwargs)
+        try:
+            return self.bids_handler.list_eeg_filesets(dataset, **kwargs)
+        except GirderHTTPError as e:
+            if e.status == 403:
+                msg = "Access denied"
+            elif e.status == 401:
+                msg = "Unauthorized"
+            else:
+                msg = "Invalid request"
+            raise DatabaseError(f"Could not list EEGs: {msg}") from e
 
     def refresh_eeg_fileset(self, eeg_fileset: EEGFileset, compute_eeg: bool = False) -> EEGFileset:
-        return self.bids_handler.get_eeg_fileset(eeg_fileset, compute=compute_eeg)
+        try:
+            return self.bids_handler.get_eeg_fileset(eeg_fileset, compute=compute_eeg)
+        except GirderHTTPError as e:
+            raise DatabaseError(f"Could not refresg EEG {eeg_fileset.name}: {handle_database_error(e)}") from e
 
     def _download_file(self, file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
-        file_path = Path(download_dir) / file.name
-        return self.bids_handler.download_file(file, file_path, refresh)
+        try:
+            file_path = Path(download_dir) / file.name
+            return self.bids_handler.download_file(file, file_path, refresh)
+        except GirderHTTPError as e:
+            raise DatabaseError(f"Could not download file {file.name}: {handle_database_error(e)}") from e
 
     def download_eeg_files(
         self,
         eeg_fileset: EEGFileset,
         download_dir: str,
-        annotation_file: AnnotationFile | None = None,
+        annotations_file: AnnotationsFile | None = None,
     ) -> tuple[Asset, Asset]:
         if eeg_fileset.eeg._id is None:
             raise DatabaseError(f"No EEG file to load in fileset {eeg_fileset.name}")
 
-        eeg = self._download_file(eeg_fileset.eeg, download_dir)
+        eeg_asset = self._download_file(eeg_fileset.eeg, download_dir)
 
-        if annotation_file is None:
-            annotation_name = self.bids_handler.get_next_annotation_file_name(eeg_fileset)
-            annotation_path = Path(download_dir) / annotation_name
-            annotation_path.touch()
-            annotation = Asset(annotation_name, str(annotation_path))
+        if annotations_file is None:
+            annotations_asset_name = self.bids_handler.get_next_annotations_file_name(eeg_fileset)
+            annotations_asset_path = Path(download_dir) / annotations_asset_name
+            annotations_asset_path.touch()
+            annotations_asset = Asset(annotations_asset_name, str(annotations_asset_path))
 
         else:
             # Reload because annotation could have been updated
-            annotation = self._download_file(annotation_file, download_dir, refresh=True)
+            annotations_asset = self._download_file(annotations_file, download_dir, refresh=True)
 
-        return eeg, annotation
+        return eeg_asset, annotations_asset
 
-    def save_annotations(self, eeg_fileset: EEGFileset, annotation: Asset) -> AnnotationFile:
-        user = self.get_me()
-        return self.bids_handler.upload_annotations_file(eeg_fileset, annotation, user._id)
+    def upload_annotations_file(self, eeg_fileset: EEGFileset, annotations_asset: Asset) -> AnnotationsFile:
+        try:
+            user = self.get_me()
+            return self.bids_handler.upload_annotations_file(eeg_fileset, annotations_asset, user._id)
+        except GirderHTTPError as e:
+            raise DatabaseError(
+                f"Could not upload annotations file {annotations_asset.name} to {eeg_fileset.name}: {handle_database_error(e)}"
+            ) from e

@@ -27,9 +27,9 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
         with self.action_slot:
             v3.VChip(
-                v_if=f"{self.item}.annotations.length",
+                v_if=f"{self.item}.annotations_files.length",
                 append_icon="mdi-tag",
-                text=(f"{self.item}.annotations.length",),
+                text=(f"{self.item}.annotations_files.length",),
                 color="warning",
             )
             self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
@@ -39,7 +39,7 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
             AnnotationList(
                 user_id=user_id,
                 fileset_id=self.item_state.name._id,
-                annotations=f"{self.item}.annotations",
+                annotations=f"{self.item}.annotations_files",
                 select_callable=self.select_item,
             )
 
@@ -55,5 +55,5 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
     def select_item(self, eeg_fileset_id: str, annotation_id: str | None = None) -> None:
         eeg_fileset = next(it for it in self.list_state.data.items if it._id == eeg_fileset_id)
-        annotation = next((ann for ann in eeg_fileset.annotations if ann._id == annotation_id), None)
+        annotation = next((ann for ann in eeg_fileset.annotations_files if ann._id == annotation_id), None)
         self.item_selected(eeg_fileset, annotation)
