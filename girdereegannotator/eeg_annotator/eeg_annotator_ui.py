@@ -23,36 +23,36 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     save_clicked = Signal()
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(classes="fill-height", **kwargs)
+        super().__init__(classes="annotator", **kwargs)
         self._init_typed_state(self.state, EEGAnnotatorState)
 
         with self:
-            self.viewer_ui = EEGViewerUI(style="height: calc(100% - 50px);")
+            self.viewer_ui = EEGViewerUI()
 
-            with html.Div(classes="d-flex align-center justify-center", style="height: 50px;", **kwargs):
-                Button(
-                    click=self.previous_clicked,
-                    icon="mdi-chevron-left",
-                    tooltip="Previous EEG",
-                    tooltip_location="bottom start",
-                )
-                Button(
-                    click=self.next_clicked,
-                    icon="mdi-chevron-right",
-                    tooltip="Next EEG",
-                    tooltip_location="bottom start",
-                )
-                v3.VSpacer()
+    def build_helper(self) -> None:
+        ShortcutsPanel()
 
-                html.Div(
-                    "{{ " + self.typed_state.name.eeg_fileset.name + " }}", v_if=self.typed_state.name.eeg_fileset.name
-                )
+    def build_toolbar(self) -> None:
+        with html.Div(classes="button-bar"):
+            Button(
+                click=self.previous_clicked,
+                icon="mdi-chevron-left",
+                tooltip="Previous EEG",
+                tooltip_location="bottom start",
+            )
+            Button(
+                click=self.next_clicked,
+                icon="mdi-chevron-right",
+                tooltip="Next EEG",
+                tooltip_location="bottom start",
+            )
 
-                v3.VSpacer()
-                Button(
-                    icon="mdi-content-save-outline",
-                    click=self.save_clicked,
-                    tooltip="Save annotations",
-                    tooltip_location="bottom start",
-                )
-                ShortcutsPanel()
+        v3.VSpacer()
+
+        with html.Div(classes="button-bar"):
+            Button(
+                icon="mdi-content-save-outline",
+                click=self.save_clicked,
+                tooltip="Save annotations",
+                tooltip_location="bottom start",
+            )
