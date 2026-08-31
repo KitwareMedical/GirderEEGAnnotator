@@ -10,7 +10,11 @@ from girdereegannotator.utils.base_ui import BaseUI
 from ..authentication import AuthenticationUI
 from ..eeg_annotator import EGGAnnotatorUI
 from ..portal import PortalUI
-from .components.navigation_card import NavigationCard, NavigationState
+from .components.navigation_card import (
+    NavigationCard,
+    NavigationState,
+    NavigationWindow,
+)
 
 
 @dataclass
@@ -34,6 +38,7 @@ class AnnotatorAppLayout(VAppLayout, BaseUI[AnnotatorAppState]):
                 v3.VIcon(icon="mdi-heart-pulse", size="x-large", color="primary", classes="mx-4")
                 v3.VAppBarTitle(text=(self.name.app_name,))
                 v3.VSpacer()
+                self.helper = html.Div(v_if=f"{self.name.nav_state.window} === {NavigationWindow.ANNOTATOR.value}")
             with v3.VMain(classes="app-main"):
                 self.app_navigation = NavigationCard(self.get_sub_state(self.name.nav_state))
 
@@ -51,7 +56,8 @@ class AnnotatorAppUI:
 
             client.Style(
                 "html { overflow-y: hidden; } "
-                ".annotator { height: 100vh; display: flex; flex-direction: column;}"
+                ".annotator { height: 100%; }"
+                ".annotator-toolbar { display: flex; flex-grow: 1; align-items: center; }"
                 ".annotator-window { border: 2px dashed transparent; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }"
                 ".annotator-window:focus-within { border-color: orange; }"
                 ".annotation-list-item .v-list-item__content { display: flex; align-items: center; gap: 8px; }"
@@ -81,15 +87,20 @@ class AnnotatorAppUI:
                 ".metadata-item { width: 50%; }"
                 ".metadata-list { display: flex; flex-wrap: wrap; }"
                 ".nav-bar { height: 65px; }"
-                ".nav-bar .v-card-item__content { display: flex; align-items: center; justify-content: space-between; }"
+                ".nav-bar .v-card-item__content { display: flex; align-items: center; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
                 ".portal { padding-left: 20px; padding-right: 20px; padding-bottom: 10px; height: 100%;}"
+                ".portal-toolbar { display: flex; flex-grow: 1; align-items: center; justify-content: end; }"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
                 ".search-input { display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
                 ".search-input .v-field { background-color: inherit; }"
                 ".status-button .v-btn__content { display: flex; flex-direction: column; gap: 4px;}"
                 ".status-button { background-color: rgb(var(--v-theme-surface-variant)); color: rgb(var(--v-theme-on-surface-variant))}"
+                ".viewer { height: 100%;}"
+                ".viewer__load { height: 5px; }"
+                ".viewer__error { height: calc(100% - 5px); }"
+                ".viewer__content { height: calc(100% - 5px); }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-input__details:has(.v-messages:empty) { display: none; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
@@ -110,6 +121,12 @@ class AnnotatorAppUI:
             with self.navigation.annotator:
                 self.eeg_annotator_ui = EGGAnnotatorUI()
 
+            with self.helper:
+                self.eeg_annotator_ui.build_helper()
+
+            with self.navigation.annotator_toolbar:
+                self.eeg_annotator_ui.build_toolbar()
+
     @property
     def bar(self) -> html.Div:
         return self.layout.app_bar
@@ -117,3 +134,7 @@ class AnnotatorAppUI:
     @property
     def navigation(self) -> html.Div:
         return self.layout.app_navigation
+
+    @property
+    def helper(self) -> html.Div:
+        return self.layout.helper
