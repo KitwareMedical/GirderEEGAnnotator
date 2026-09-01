@@ -1,9 +1,15 @@
+import shutil
 from pathlib import Path
 from typing import Any
 
 import libeegviz
 import numpy as np
 from PIL import Image
+
+from girdereegannotator.database.models import Asset
+
+
+class RCAViewError(Exception): ...
 
 
 class RCAView:
@@ -12,12 +18,39 @@ class RCAView:
         self._events = ["MouseMove", "LeftButtonPress", "RightButtonPress", "KeyDown"]
         self._cols, self._rows = 0, 0
         self.window_size = {"w": 0, "h": 0}
+        self.tmp_annotations_asset = Asset(name="tmp_annotations_file.tsv")
 
-    def set_files(self, file_path: str, annotation_file_path: str) -> None:
-        if not Path(file_path).exists():
-            raise Exception(f"{file_path} does not exist")
+    def save_annotations_asset(self, annotations_asset_path: str) -> None:
+        if not Path(self.tmp_annotations_asset.path).exists():
+            raise FileNotFoundError(f"{self.tmp_annotations_asset.path} does not exist")
 
-        self._context = libeegviz.create2(file_path, annotation_file_path)
+        if not Path(annotations_asset_path).exists():
+            raise FileNotFoundError(f"{annotations_asset_path} does not exist")
+
+        shutil.copy(self.tmp_annotations_asset.path, annotations_asset_path)
+
+    def set_eeg_file(self, dir_path: str, eeg_file_path: str) -> None:
+        if not Path(eeg_file_path).exists():
+            raise FileNotFoundError(f"{eeg_file_path} does not exist")
+
+        self.tmp_annotations_asset.path = str(Path(dir_path) / self.tmp_annotations_asset.name)
+
+        try:
+            self._context = libeegviz.create2(eeg_file_path, self.tmp_annotations_asset.path)
+        except Exception as e:
+            raise RCAViewError(f"Could not open {eeg_file_path} in viewer") from e
+
+    def set_annotations_asset(self, annotations_asset_path: str) -> None:
+        if self._context is None:
+            return
+
+        if not Path(annotations_asset_path).exists():
+            raise FileNotFoundError(f"{annotations_asset_path} does not exist")
+
+        try:
+            libeegviz.load_annotations(self._context, annotations_asset_path)
+        except Exception as e:
+            raise RCAViewError(f"Could not open annotations file {annotations_asset_path} in viewer") from e
 
     def _move(self, x: float, y: float) -> None:
         if self._context is None:
