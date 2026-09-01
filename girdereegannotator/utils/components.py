@@ -32,6 +32,7 @@ class Button(VBtn):
         text_transform = "uppercase" if kwargs.get("block", False) else text_transform or "none"
         kwargs["style"] = " ".join([kwargs.get("style", ""), f"text-transform: {text_transform};"])
         kwargs["__events"] = [*kwargs.get("__events", []), ("click_stop", "click.stop")]
+        kwargs["__properties"] = [*kwargs.get("__properties", []), "type"]
 
         super().__init__(**kwargs)
 

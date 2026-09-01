@@ -1,153 +1,225 @@
 from asyncio import Task
-from collections.abc import Callable
 
 from trame_server import Server
 from undo_stack import Signal
 
-from girdereegannotator.database.models import BIDSDataset, EEGFileset
-from girdereegannotator.portal.components.expandable_list import ExpandableListState
+from girdereegannotator.database.models import (
+    AnnotationStatus,
+    Dataset,
+    EEGFileset,
+    User,
+)
+from girdereegannotator.portal.components.filters.annotator_filter import Annotator
+from girdereegannotator.portal.components.filters.status_filter import Status
 from girdereegannotator.utils.base_logic import BaseLogic
-from girdereegannotator.utils.load_status import LoadStatus
 
 from .components.breadcrumbs import BreadcrumbsElement
+from .list_logic import ListLogic
 from .portal_ui import PortalState, PortalUI
 
 
 class PortalLogic(BaseLogic[PortalState]):
-    eeg_fileset_selected = Signal(EEGFileset | None)
+    eeg_fileset_selected = Signal(EEGFileset)
     eeg_fileset_unselected = Signal()
-    select_eeg_fileset = Signal(int)
-    reset_dataset_scroll = Signal()
-    reset_eeg_fileset_scroll = Signal()
 
     def __init__(self, server: Server) -> None:
         super().__init__(server, PortalState)
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
+        self.current_user_id = None
 
-        self.limit = 15
+        self.validation_threshold = 3
 
-    def _load_next_list_item(
-        self,
-        list_state: ExpandableListState,
-        load_callable: Callable[[], list],
-        **kwargs,
-    ) -> Task | None:
-        if list_state.load_status == LoadStatus.LOADING:
-            return None
-
-        list_state.load_status = LoadStatus.LOADING
-
-        def _refresh() -> None:
-            try:
-                item_list = load_callable(offset=len(list_state.items), limit=self.limit, **kwargs)
-                list_state.load_status = LoadStatus.UNDEFINED if len(item_list) == self.limit else LoadStatus.LOADED
-                list_state.items = list_state.items + item_list
-
-            except Exception as e:
-                list_state.load_status = LoadStatus.ERROR
-                list_state.status_message = str(e)
-
-        return self.create_async_task(_refresh)
-
-    def _refresh_dataset_list(self) -> None:
-        self.data.dataset_list_state.items = []
-        self.data.dataset_list_state.current_index = None
-        self.data.dataset_list_state.load_status = LoadStatus.UNDEFINED
-        self.data.dataset_list_state.status_message = None
-        self._load_next_datasets()
-
-    def _refresh_eeg_fileset_list(self) -> None:
-        self.data.eeg_fileset_list_state.items = []
-        self.data.eeg_fileset_list_state.current_index = None
-        self.data.eeg_fileset_list_state.load_status = LoadStatus.UNDEFINED
-        self.data.eeg_fileset_list_state.status_message = None
-        self._load_next_eeg_filesets()
-
-    def _load_next_datasets(self) -> Task | None:
-        return self._load_next_list_item(
-            self.data.dataset_list_state,
-            self.server.controller.list_datasets,
+        self.dataset_list_logic = ListLogic[Dataset](
+            server,
+            self.get_sub_state(self.name.dataset_list_state),
+            on_load=self.ctrl.list_datasets,
         )
 
-    def _load_next_eeg_filesets(self) -> Task | None:
+        self.eeg_fileset_list_logic = ListLogic[EEGFileset](
+            server,
+            self.get_sub_state(self.name.eeg_fileset_list_state),
+            on_load=self.ctrl.list_eeg_filesets,
+            on_filter=self._matches_eeg_fileset_filter,
+        )
+
+        self.eeg_fileset_list_logic.bind_changes(
+            {self.eeg_fileset_list_logic.name.items: self._count_eeg_filesets_per_status}
+        )
+        self.bind_changes(
+            {
+                self.name.current_breadcrumbs_element: self._on_breadcrumbs_navigated,
+            }
+        )
+
+    @property
+    def current_eeg_fileset_index(self) -> int:
+        return next(
+            (
+                i
+                for i, item in enumerate(self.eeg_fileset_list_logic.data.items)
+                if item._id == self.current_eeg_fileset.data._id
+            ),
+            0,
+        )
+
+    def _count_eeg_filesets_per_status(self, eeg_fileset_list: list[EEGFileset]) -> None:
+        self.data.eeg_fileset_filter_state.status_state.counts = {
+            status: sum(self._matches_eeg_fileset_filter(f, status, Annotator.UNDEFINED) for f in eeg_fileset_list)
+            for status in Status
+        }
+
+    def _is_eeg_fileset_validated(self, eeg_fileset: EEGFileset) -> bool:
+        return sum(ann.status == AnnotationStatus.DONE for ann in eeg_fileset.annotations) > self.validation_threshold
+
+    def _matches_eeg_fileset_filter(
+        self, eeg_fileset: EEGFileset, status: Status | None = None, annotator: Annotator | None = None
+    ) -> bool:
+        status = status or self.data.eeg_fileset_filter_state.status_state.status
+        annotator = annotator or self.data.eeg_fileset_filter_state.annotator_state.annotator
+
+        is_validated = self._is_eeg_fileset_validated(eeg_fileset)
+
+        if status == Status.DONE and not is_validated:
+            return False
+        if status not in [Status.DONE, Status.UNDEFINED] and is_validated:
+            return False
+
+        annotations = eeg_fileset.annotations
+        if status == Status.TO_DO:
+            return not any(annotations)
+
+        if annotator == Annotator.ME:
+            annotations = [ann for ann in annotations if ann.annotator_id == self.current_user_id]
+        elif annotator == Annotator.NOT_ME:
+            annotations = [ann for ann in annotations if ann.annotator_id != self.current_user_id]
+
+        if status == Status.IN_REVIEW:
+            return any(ann.status == AnnotationStatus.IN_REVIEW for ann in annotations)
+
+        if status == Status.IN_PROGRESS:
+            return any(ann.status == AnnotationStatus.IN_PROGRESS for ann in annotations)
+
+        if status == Status.DONE:
+            return any(ann.status == AnnotationStatus.DONE for ann in annotations)
+
+        # Status.UNDEFINED
+        return True
+
+    def fetch_datasets(self) -> Task | None:
+        return self.dataset_list_logic.fetch_item_list(search_text=self.data.dataset_filter_state.search_text)
+
+    def fetch_eeg_filesets(self) -> Task | None:
+        self.data.eeg_fileset_filter_state.status_state.counts = {}
+
         if self.current_dataset.data._id is None:
+            self.data.eeg_fileset_filter_state.status_state.status = Status.UNDEFINED
+            self.data.eeg_fileset_filter_state.annotator_state.annotator = Annotator.UNDEFINED
+            self.eeg_fileset_list_logic.reset()
             return None
 
-        return self._load_next_list_item(
-            self.data.eeg_fileset_list_state,
-            self.server.controller.list_eeg_filesets,
+        return self.eeg_fileset_list_logic.fetch_item_list(
             dataset=self.current_dataset.get_dataclass(),
+            search_text=self.data.eeg_fileset_filter_state.search_state.search_text,
         )
 
-    def _reset_eeg_fileset(self) -> None:
-        self.current_eeg_fileset.set_dataclass(EEGFileset())
-        self.eeg_fileset_unselected()
+    def filter_datasets(self) -> Task | None:
+        return self.dataset_list_logic.filter_item_list(search_text=self.data.dataset_filter_state.search_text)
 
-    def _reset_dataset(self) -> None:
-        self.current_dataset.set_dataclass(BIDSDataset())
-        self._reset_eeg_fileset()
-        self._refresh_eeg_fileset_list()
+    def filter_eeg_filesets(self) -> Task | None:
+        return self.eeg_fileset_list_logic.filter_item_list(
+            search_text=self.data.eeg_fileset_filter_state.search_state.search_text
+        )
 
-    def _on_breadcrumbs_clicked(self, breadcrumbs_element: BreadcrumbsElement) -> None:
-        if breadcrumbs_element == BreadcrumbsElement.ROOT:
-            self._reset_dataset()
+    def refresh(self) -> None:
+        """Reloads the active view from scratch."""
+        if self.current_dataset.data._id is None:
+            self.current_dataset.set_dataclass(Dataset())
+            self.fetch_datasets()
+        else:
+            self.current_eeg_fileset.set_dataclass(EEGFileset())
+            self.fetch_eeg_filesets()
 
-        elif breadcrumbs_element == BreadcrumbsElement.DATASET:
-            self._reset_eeg_fileset()
-
-    def _on_dataset_selected(self, dataset: BIDSDataset) -> None:
+    def _on_dataset_selected(self, dataset: Dataset) -> None:
         self.current_dataset.set_dataclass(dataset)
-        self._load_next_eeg_filesets()
+        self.data.current_breadcrumbs_element = BreadcrumbsElement.DATASET
+        self.fetch_eeg_filesets()
 
     def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
         self.current_eeg_fileset.set_dataclass(eeg_fileset)
+        self.data.current_breadcrumbs_element = BreadcrumbsElement.EEG_FILESET
         self.eeg_fileset_selected(eeg_fileset)
 
-    async def _shift_eeg_fileset_index(self, offset: int) -> None:
-        if self.data.eeg_fileset_list_state.current_index is None or not self.data.eeg_fileset_list_state.items:
+    def _on_dataset_expanded(self, dataset: Dataset | None) -> None:
+        self.current_dataset.set_dataclass(dataset if dataset is not None else Dataset())
+
+    def _on_eeg_fileset_expanded(self, eeg_fileset: EEGFileset | None) -> None:
+        self.current_eeg_fileset.set_dataclass(eeg_fileset if eeg_fileset is not None else EEGFileset())
+
+    def clear_eeg_selection(self) -> None:
+        self.eeg_fileset_unselected()
+        self.fetch_eeg_filesets()
+
+    def clear_dataset_selection(self) -> None:
+        self.current_eeg_fileset.set_dataclass(EEGFileset())
+        self.clear_eeg_selection()
+        self.fetch_datasets()
+
+    def _on_breadcrumbs_navigated(self, target: BreadcrumbsElement) -> None:
+        if target == BreadcrumbsElement.ROOT and self.current_dataset.data._id is not None:
+            self.clear_dataset_selection()
+        elif target == BreadcrumbsElement.DATASET and self.current_eeg_fileset.data._id is not None:
+            self.clear_eeg_selection()
+
+    def step_eeg_selection(self, offset: int) -> None:
+        """Navigates to next/previous EEG items, pulling next pages if necessary."""
+        eeg_fileset_list = self.data.eeg_fileset_list_state.items
+        if not eeg_fileset_list or not offset:
             return
 
-        target_index = self.data.eeg_fileset_list_state.current_index + offset
+        direction = 1 if offset > 0 else -1
+        target_index = self.current_eeg_fileset_index + offset
+        target: EEGFileset | None = None
 
-        while (
-            target_index >= len(self.data.eeg_fileset_list_state.items)
-            and self.data.eeg_fileset_list_state.load_status == LoadStatus.UNDEFINED
-        ):
-            refresh_task = self._load_next_eeg_filesets()
-            if refresh_task is not None:
-                await refresh_task
+        while 0 <= target_index < len(eeg_fileset_list):
+            candidate: EEGFileset = self.ctrl.refresh_eeg_fileset(eeg_fileset_list[target_index])
+            if self._matches_eeg_fileset_filter(candidate):
+                target = candidate
+                break
 
-        self.select_eeg_fileset(
-            (self.data.eeg_fileset_list_state.current_index + offset) % len(self.data.eeg_fileset_list_state.items)
-        )
+            target_index += direction
 
-    async def select_previous_eeg(self) -> None:
-        await self._shift_eeg_fileset_index(-1)
+        if target:
+            self._on_eeg_fileset_selected(target)
 
-    async def select_next_eeg(self) -> None:
-        await self._shift_eeg_fileset_index(1)
+        # Refreshes entire list in the background
+        self.fetch_eeg_filesets()
 
-    def update_eeg_fileset_list(self, eeg_fileset: EEGFileset) -> None:
-        self.current_eeg_fileset.set_dataclass(eeg_fileset)
-        self.data.eeg_fileset_list_state.items = [
-            eeg_fileset if index == self.data.eeg_fileset_list_state.current_index else media
-            for (index, media) in enumerate(self.data.eeg_fileset_list_state.items)
-        ]
+    def select_previous_eeg(self) -> None:
+        self.step_eeg_selection(-1)
 
-    def refresh(self) -> None:
-        if self.current_dataset.data._id is None:
-            self._refresh_dataset_list()
-        else:
-            self._refresh_eeg_fileset_list()
+    def select_next_eeg(self) -> None:
+        self.step_eeg_selection(1)
+
+    def update_eeg_fileset_in_list(self, updated_fileset: EEGFileset) -> None:
+        """Replaces the active item in memory without triggering a full refresh."""
+        self.current_eeg_fileset.set_dataclass(updated_fileset)
+        self.eeg_fileset_list_logic.update_item(updated_fileset)
+
+    def set_current_user(self, user: User) -> None:
+        self.current_user_id = user._id
 
     def set_ui(self, ui: PortalUI) -> None:
+        # Toolbar bindings
         ui.refresh_clicked.connect(self.refresh)
-        ui.breadcrumbs_ui.breadcrumbs_clicked.connect(self._on_breadcrumbs_clicked)
+        ui.refresh_clicked.connect(self.refresh)
+
+        # Dataset bindings
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
+        ui.dataset_list.item_expanded.connect(self._on_dataset_expanded)
+        ui.dataset_filters.filter_changed.connect(self.filter_datasets)
+
+        # EEG bindings
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
-
-        ui.dataset_list.set_load_callback(self._load_next_datasets)
-        ui.eeg_fileset_list.set_load_callback(self._load_next_eeg_filesets)
-
-        self.select_eeg_fileset.connect(ui.eeg_fileset_list.select_item)
+        ui.eeg_fileset_list.item_expanded.connect(self._on_eeg_fileset_expanded)
+        ui.eeg_fileset_filters.filter_changed.connect(self.filter_eeg_filesets)

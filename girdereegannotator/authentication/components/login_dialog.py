@@ -76,5 +76,4 @@ class LoginDialog(v3.VDialog):
                     disabled=("!isValid.value",),
                     loading=(login_state.name.loading,),
                     type="submit",
-                    __properties=["type"],
                 )

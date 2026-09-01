@@ -11,15 +11,17 @@ from .expandable_list import ExpandableList
 
 @dataclass
 class EEGFilesetListState:
-    current_index: int | None = None
     items: list[EEGFileset] = field(default_factory=list)
+    filtered_out_ids: list[str] = field(default_factory=list)
     load_status: LoadStatus = LoadStatus.UNDEFINED
     status_message: str | None = None
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
-    def __init__(self, list_state: TypedState[EEGFilesetListState], **kwargs) -> None:
-        super().__init__(list_state=list_state, item_type="EEG filesets", **kwargs)
+    def __init__(
+        self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
+    ) -> None:
+        super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
         with self.action_slot:
             v3.VChip(
@@ -32,3 +34,6 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
         with self.expand_slot:
             self.build_metadata(f"{self.item}.metadata")
+
+        with self.count_slot:
+            self.build_count("EEG filesets")

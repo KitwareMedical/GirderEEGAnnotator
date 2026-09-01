@@ -13,7 +13,8 @@ from ..interface_database import DatabaseInterface
 from ..models import (
     AnnotationFile,
     Asset,
-    BIDSDataset,
+    DatabaseError,
+    Dataset,
     EEGFile,
     EEGFileset,
     GirderModel,
@@ -95,19 +96,22 @@ class GirderDatabase(DatabaseInterface):
         user = self.girder_client.get(path="user/me")
         return self._user_as_dataclass(user) if user else None
 
-    def list_datasets(self, _collection_id: str | None = None, offset: int = 0, limit: int = 15) -> list[BIDSDataset]:
+    def list_datasets(self, _collection_id: str | None = None, **kwargs) -> list[Dataset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_datasets(self.collection_id, offset, limit)
+        return self.bids_handler.list_datasets(self.collection_id, **kwargs)
 
-    def list_eeg_filesets(self, dataset: BIDSDataset, offset: int = 0, limit: int = 15) -> list[EEGFileset]:
+    def list_eeg_filesets(self, dataset: Dataset, **kwargs) -> list[EEGFileset]:
         if not self.authenticated:
             return []
-        return self.bids_handler.list_eeg_filesets(dataset, offset, limit)
+        return self.bids_handler.list_eeg_filesets(dataset, **kwargs)
 
-    def _download_media_file(self, media_file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
-        media_file_path = Path(download_dir) / media_file.name
-        return self.bids_handler.download_file(media_file, media_file_path, refresh)
+    def refresh_eeg_fileset(self, eeg_fileset: EEGFileset, compute_eeg: bool = False) -> EEGFileset:
+        return self.bids_handler.get_eeg_fileset(eeg_fileset, compute=compute_eeg)
+
+    def _download_file(self, file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
+        file_path = Path(download_dir) / file.name
+        return self.bids_handler.download_file(file, file_path, refresh)
 
     def download_eeg_files(
         self,
@@ -115,22 +119,20 @@ class GirderDatabase(DatabaseInterface):
         download_dir: str,
         annotation_file: AnnotationFile | None = None,
     ) -> tuple[Asset, Asset]:
-        self.bids_handler.get_eeg_files(eeg_fileset, compute=True)
+        if eeg_fileset.eeg._id is None:
+            raise DatabaseError(f"No EEG file to load in fileset {eeg_fileset.name}")
 
-        eeg = self._download_media_file(eeg_fileset.eeg, download_dir)
+        eeg = self._download_file(eeg_fileset.eeg, download_dir)
 
         if annotation_file is None:
             annotation_name = self.bids_handler.get_next_annotation_file_name(eeg_fileset)
             annotation = Asset(annotation_name, str(Path(download_dir) / annotation_name))
         else:
             # Reload because annotation could have been updated
-            annotation = self._download_media_file(annotation_file, download_dir, refresh=True)
+            annotation = self._download_file(annotation_file, download_dir, refresh=True)
 
         return eeg, annotation
 
     def save_annotations(self, eeg_fileset: EEGFileset, annotation: Asset) -> AnnotationFile:
         user = self.get_me()
-        file = self.bids_handler.upload_file(
-            annotation, eeg_fileset.upload_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
-        )
-        return AnnotationFile(_id=file._id, name=file.name, annotator_id=user._id)
+        return self.bids_handler.upload_annotation(eeg_fileset, annotation, user._id)

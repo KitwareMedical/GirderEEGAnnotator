@@ -1,24 +1,31 @@
 from dataclasses import asdict, dataclass, field, fields
+from enum import Enum, auto
 from typing import Any
 
 GirderModel = dict[str, Any]
 GirderParams = dict[str, Any]
 
 
+class DatabaseError(Exception): ...
+
+
 @dataclass
-class BIDSSuffix:
+class FileSuffix:
     eeg: str = "_eeg"
     annotation: str = "_events"
 
 
 @dataclass
-class BIDSExtension:
+class FileExtension:
     eeg: str = ".edf"
     annotation: str = ".csv"
 
 
 @dataclass
 class Model:
+    _id: str | None = None
+    name: str | None = None
+
     @classmethod
     def fields(cls) -> list[str]:
         return [f.name for f in fields(cls)]
@@ -33,33 +40,38 @@ class Model:
 
 
 @dataclass
-class BIDSDataset(Model):
-    _id: str | None = None
-    name: str | None = None
+class Dataset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
-    derivative_dataset_id: str | None = None
 
 
 @dataclass
-class EEGFile(Model):
-    _id: str | None = None
-    name: str | None = None
+class EEGFile(Model): ...
+
+
+class AnnotationStatus(Enum):
+    IN_PROGRESS = auto()
+    IN_REVIEW = auto()
+    DONE = auto()
 
 
 @dataclass
 class AnnotationFile(EEGFile):
     annotator_id: str | None = None
+    status: AnnotationStatus = AnnotationStatus.IN_PROGRESS
+
+
+@dataclass(frozen=True)
+class EEGFilesetIdentifier:
+    _id: str
+    name: str
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
-class EEGFileset:
-    name: str | None = None
+class EEGFileset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
-    raw_eeg: EEGFile = field(default_factory=EEGFile)
     eeg: EEGFile = field(default_factory=EEGFile)
     annotations: list[AnnotationFile] = field(default_factory=list)
-    upload_dataset_id: str | None = None
-    upload_folder_id: str | None = None
 
 
 @dataclass
@@ -70,7 +82,6 @@ class Asset:
 
 @dataclass
 class User(Model):
-    _id: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     login: str | None = None
