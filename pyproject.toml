@@ -1,6 +1,6 @@
 [project]
 name = "girdereegannotator"
-version = "1.8.0"
+version = "1.9.0"
 description = "Browser and Annotator of Girder database"
 authors = [
     {name = "Kitware Europe"},

@@ -2,6 +2,48 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-09-01)
+
+### Chores
+
+- Make application bids agnostic
+  ([`13808b3`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/13808b30ba2357a46dc7aae1f123d20be51c075f))
+
+- Take reviews into account
+  ([`cbb8df3`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/cbb8df37f0f81ee6dd75ed12b7f95bb08ae9c7d5))
+
+- **python 3.10**: Remove python 3.10 support
+  ([`4f41b22`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/4f41b22d2051db37cfec0538260dbd216429072d))
+
+### Features
+
+- **annotator filter**: Add filter to choose annotation author
+  ([`5ee384f`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5ee384f81630b25062c8a500b00752f0ebcb0931))
+
+- **counts**: Add counts for each status types and for pagination
+  ([`7447260`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/744726045a9b856c47c896f8053947356b5c4f7b))
+
+- **filter**: Filter existing list rather than refreshing
+  ([`0436b58`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/0436b58f99f12b283aaef3f670ddd601e67bec8f))
+
+- **pagination**: Remove database pagination to simplify
+  ([`63335cc`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/63335cc0ac013946e1766601c5641ad1f3acbdee))
+
+- **refresh**: Agg eeg fileset refresh before loading to viewer or saving
+  ([`550bdc0`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/550bdc068accfcb823e511111d37b42986f07122))
+
+- **search**: Add input to filter list items by name
+  ([`9662020`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/96620200f96a3f3a09f8f8a25130c4782fe61c78))
+
+- **status filter**: Add eeg filesets status filters
+  ([`ab44b1f`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/ab44b1ff91e42a7afc178e83af6539d07ab241db))
+
+### Refactoring
+
+- **ui**: Add virtual scroll to load only few list items to DOM
+  ([`a2fdf72`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/a2fdf72f01c018379c9a949e2b877518c9896725))
+
+
 ## v1.8.0 (2026-08-25)
 
 ### Features
