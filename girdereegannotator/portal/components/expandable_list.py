@@ -42,7 +42,7 @@ class ExpandableListItemMetadata(v3.VList):
             html.Div(classes="metadata-content"),
         ):
             html.Span("{{ key }}", classes="text-subtitle-2")
-            html.Span("{{ value }}", classes="text-right text-body-2 metadata-ellipsis")
+            html.Span("{{ value }}", classes="text-right text-body-2 text-ellipsis")
 
 
 class ExpandableListItem(v3.VListItem):

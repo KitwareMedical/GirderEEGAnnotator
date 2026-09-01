@@ -51,6 +51,7 @@ class ShortcutsPanel(v3.VDialog):
             with v3.Template(v_slot_activator="{ props : activatorProps }"):
                 Button(
                     v_bind="activatorProps",
+                    density="comfortable",
                     icon="mdi-help-circle-outline",
                     tooltip="Keyboard shortcuts",
                     tooltip_location="bottom start",

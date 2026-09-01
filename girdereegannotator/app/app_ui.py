@@ -10,11 +10,7 @@ from girdereegannotator.utils.base_ui import BaseUI
 from ..authentication import AuthenticationUI
 from ..eeg_annotator import EGGAnnotatorUI
 from ..portal import PortalUI
-from .components.navigation_card import (
-    NavigationCard,
-    NavigationState,
-    NavigationWindow,
-)
+from .components.navigation_card import NavigationCard, NavigationState
 
 
 @dataclass
@@ -37,8 +33,6 @@ class AnnotatorAppLayout(VAppLayout, BaseUI[AnnotatorAppState]):
             with html.Div(classes="app-bar") as self.app_bar:
                 v3.VIcon(icon="mdi-heart-pulse", size="x-large", color="primary", classes="mx-4")
                 v3.VAppBarTitle(text=(self.name.app_name,))
-                v3.VSpacer()
-                self.helper = html.Div(v_if=f"{self.name.nav_state.window} === {NavigationWindow.ANNOTATOR.value}")
             with v3.VMain(classes="app-main"):
                 self.app_navigation = NavigationCard(self.get_sub_state(self.name.nav_state))
 
@@ -56,55 +50,62 @@ class AnnotatorAppUI:
 
             client.Style(
                 "html { overflow-y: hidden; } "
+                ".annotation-input { width: 600px; height: 100%; padding-left: 8px; padding-right: 8px; display: flex; align-items: center; }"
+                ".annotation-input__actions { display: flex; align-items: center; }"
+                ".annotation-input__menu .v-field { background-color: inherit; }"
+                ".annotation-input__menu { height: 100%; display: flex; flex-grow: 1; }"
+                ".annotation-list .annotation-list-item:hover { background-color: color-mix(in srgb, rgb(var(--v-theme-surface)) 95%, rgb(var(--v-theme-primary))); }"
+                ".annotation-list-item .v-list-item__content { display: flex; align-items: center; gap: 8px; }"
                 ".annotator { height: 100%; }"
-                ".annotator-toolbar { display: flex; flex-grow: 1; align-items: center; }"
+                ".annotator-tool { height: 100%; display: flex; flex-direction: column; }"
+                ".annotator-tool__content { height: 40px; display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
+                ".annotator-tool__label { height: 15px; padding-left: 12px; color: rgb(var(--v-theme-secondary)); font-size: 0.75em;}"
+                ".annotator-toolbar { display: flex; flex-grow: 1; align-items: center; height: 100%; }"
                 ".annotator-window { border: 2px dashed transparent; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }"
                 ".annotator-window:focus-within { border-color: orange; }"
-                ".annotation-list-item .v-list-item__content { display: flex; align-items: center; gap: 8px; }"
-                ".annotation-list-item:hover { background-color: color-mix(in srgb, rgb(var(--v-theme-surface)) 95%, rgb(var(--v-theme-primary))); }"
                 ".app-bar { height: 60px; display: flex; align-items: center; color: rgb(var(--v-theme-secondary)); }"
                 ".app-main { height: calc(100vh - 60px); padding-left: 8px; padding-right: 8px; padding-bottom: 8px }"
                 ".breadcrumbs-button { opacity: 1 !important; padding: 0px; } "
                 ".button-bar { display: flex; align-items: center; gap: 8px;}"
-                ".list-filters { height: 60px; display: flex; align-items: center; gap: 8px; justify-content: end; }"
-                ".list-filters .v-input__control { width: 200px; }"
-                ".list-filters .v-label { color: rgb(var(--v-theme-secondary)); }"
                 ".expandable-list { height: calc(100% - 60px); }"
-                ".expandable-list__load { height: 5px; }"
-                ".expandable-list__error { height: calc(100% - 5px); }"
                 ".expandable-list__content { height: calc(100% - 5px); }"
-                ".expandable-list__content-list { height: calc(100% - 30px); padding: 0px; }"
                 ".expandable-list__content-count { display: flex; justify-content: end; align-items: center; height: 30px; color: rgb(var(--v-theme-secondary)); }"
+                ".expandable-list__content-list { height: calc(100% - 30px); padding: 0px; }"
+                ".expandable-list__error { height: calc(100% - 5px); }"
+                ".expandable-list__load { height: 5px; }"
                 f".expandable-list-item {{ background-color: rgb(var(--v-theme-surface-variant)); margin-top: 4px; box-shadow: {box_shadow}; height: 50px; }}"
                 ".expandable-list-item--expanded { border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; box-shadow: none; }"
                 f".expansion-card {{ border-top-left-radius: 0px; border-top-right-radius: 0px; box-shadow: {box_shadow}; padding: 12px; }}"
+                ".fileset-input { width: 100px; height: 100%; display: flex; align-items: center; justify-content: space-around }"
                 ".image-display-area { height: calc(100% - 2px); padding: 2px; }"
+                ".list-filters .v-input__control { width: 200px; }"
+                ".list-filters .v-label { color: rgb(var(--v-theme-secondary)); }"
+                ".list-filters { height: 60px; display: flex; align-items: center; gap: 8px; justify-content: end; }"
                 ".load-error-message { display: flex; justify-content: center; align-items: center; height: 100%; }"
                 ".load-error-message span { min-width: 0; overflow-wrap: break-word; }"
                 ".load-progress .v-progress-linear__indeterminate { animation-duration: 1s; }"
                 ".metadata-content { display: flex; justify-content: space-between; align-items: center; gap:8px; }"
-                ".metadata-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
                 ".metadata-item { width: 50%; }"
                 ".metadata-list { display: flex; flex-wrap: wrap; }"
-                ".nav-bar { height: 65px; }"
                 ".nav-bar .v-card-item__content { display: flex; align-items: center; }"
+                ".nav-bar { height: 65px; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
                 ".portal { padding-left: 20px; padding-right: 20px; padding-bottom: 10px; height: 100%;}"
-                ".portal-toolbar { display: flex; flex-grow: 1; align-items: center; justify-content: end; }"
+                ".portal-toolbar { display: flex; flex-grow: 1; align-items: center; justify-content: end; height: 100%; }"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
-                ".search-input { display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
                 ".search-input .v-field { background-color: inherit; }"
+                ".search-input { display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
                 ".status-button .v-btn__content { display: flex; flex-direction: column; gap: 4px;}"
                 ".status-button { background-color: rgb(var(--v-theme-surface-variant)); color: rgb(var(--v-theme-on-surface-variant))}"
-                ".viewer { height: 100%;}"
-                ".viewer__load { height: 5px; }"
-                ".viewer__error { height: calc(100% - 5px); }"
-                ".viewer__content { height: calc(100% - 5px); }"
+                ".text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
-                ".v-input__details:has(.v-messages:empty) { display: none; }"
                 ".v-main .v-application__wrap { min-height: 100%; }"
                 ".v-main { max-height: 100%; }"
+                ".viewer { height: 100%;}"
+                ".viewer__content { height: calc(100% - 5px); }"
+                ".viewer__error { height: calc(100% - 5px); }"
+                ".viewer__load { height: 5px; }"
             )
             with self.bar:
                 self.auth_ui = AuthenticationUI()
@@ -121,9 +122,6 @@ class AnnotatorAppUI:
             with self.navigation.annotator:
                 self.eeg_annotator_ui = EGGAnnotatorUI()
 
-            with self.helper:
-                self.eeg_annotator_ui.build_helper()
-
             with self.navigation.annotator_toolbar:
                 self.eeg_annotator_ui.build_toolbar()
 
@@ -134,7 +132,3 @@ class AnnotatorAppUI:
     @property
     def navigation(self) -> html.Div:
         return self.layout.app_navigation
-
-    @property
-    def helper(self) -> html.Div:
-        return self.layout.helper
