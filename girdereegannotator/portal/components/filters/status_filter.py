@@ -4,7 +4,6 @@ from enum import Enum
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
-from undo_stack import Signal
 
 from girdereegannotator.utils.components import Button
 
@@ -24,14 +23,12 @@ class StatusState:
 
 
 class StatusFilter(v3.VBtnToggle):
-    def __init__(self, status_state: TypedState[StatusState], on_status_clicked: Signal, **kwargs):
+    def __init__(self, status_state: TypedState[StatusState], **kwargs):
         super().__init__(
             v_model=status_state.name.status,
             mandatory=True,
             **kwargs,
         )
-
-        status_state.bind_changes({status_state.name.status: on_status_clicked})
 
         status_buttons = [
             {"status": Status.UNDEFINED.value, "color": "undefined"},

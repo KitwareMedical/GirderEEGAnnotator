@@ -46,7 +46,11 @@ class PortalLogic(BaseLogic[PortalState]):
         self.eeg_fileset_list_logic.bind_changes(
             {self.eeg_fileset_list_logic.name.items: self._count_eeg_filesets_per_status}
         )
-        self.bind_changes({self.name.current_breadcrumbs_element: self._on_breadcrumbs_navigated})
+        self.bind_changes(
+            {
+                self.name.current_breadcrumbs_element: self._on_breadcrumbs_navigated,
+            }
+        )
 
     @property
     def current_eeg_fileset_index(self) -> int:
@@ -119,6 +123,14 @@ class PortalLogic(BaseLogic[PortalState]):
             search_text=self.data.eeg_fileset_filter_state.search_state.search_text,
         )
 
+    def filter_datasets(self) -> Task | None:
+        return self.dataset_list_logic.filter_item_list(search_text=self.data.dataset_filter_state.search_text)
+
+    def filter_eeg_filesets(self) -> Task | None:
+        return self.eeg_fileset_list_logic.filter_item_list(
+            search_text=self.data.eeg_fileset_filter_state.search_state.search_text
+        )
+
     def refresh(self) -> None:
         """Reloads the active view from scratch."""
         if self.current_dataset.data._id is None:
@@ -158,12 +170,6 @@ class PortalLogic(BaseLogic[PortalState]):
             self.clear_dataset_selection()
         elif target == BreadcrumbsElement.DATASET and self.current_eeg_fileset.data._id is not None:
             self.clear_eeg_selection()
-
-    def _on_status_filter_changed(self, status: Status) -> None:
-        self.data.eeg_fileset_filter_state.annotator_state.annotator = (
-            Annotator.NOT_ME if status == Status.IN_REVIEW else Annotator.UNDEFINED
-        )
-        self.fetch_eeg_filesets()
 
     def step_eeg_selection(self, offset: int) -> None:
         """Navigates to next/previous EEG items, pulling next pages if necessary."""
@@ -211,11 +217,9 @@ class PortalLogic(BaseLogic[PortalState]):
         # Dataset bindings
         ui.dataset_list.item_selected.connect(self._on_dataset_selected)
         ui.dataset_list.item_expanded.connect(self._on_dataset_expanded)
-        ui.dataset_filters.search_clicked.connect(self.fetch_datasets)
+        ui.dataset_filters.filter_changed.connect(self.filter_datasets)
 
         # EEG bindings
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
         ui.eeg_fileset_list.item_expanded.connect(self._on_eeg_fileset_expanded)
-        ui.eeg_fileset_filters.annotator_updated.connect(self.fetch_eeg_filesets)
-        ui.eeg_fileset_filters.search_clicked.connect(self.fetch_eeg_filesets)
-        ui.eeg_fileset_filters.status_clicked.connect(self._on_status_filter_changed)
+        ui.eeg_fileset_filters.filter_changed.connect(self.filter_eeg_filesets)

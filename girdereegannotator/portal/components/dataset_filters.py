@@ -6,10 +6,11 @@ from .filters.search_filter import SearchFilter, SearchState
 
 
 class DatasetFilters(html.Div):
-    search_clicked = Signal()
+    filter_changed = Signal()
 
     def __init__(self, filter_state: TypedState[SearchState], **kwargs) -> None:
         super().__init__(classes="list-filters", **kwargs)
 
         with self:
-            SearchFilter(search_state=filter_state, on_search_clicked=self.search_clicked)
+            search_filter = SearchFilter(search_state=filter_state)
+            search_filter.search_clicked.connect(self.filter_changed)

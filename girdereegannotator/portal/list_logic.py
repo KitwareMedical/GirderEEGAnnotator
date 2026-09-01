@@ -26,10 +26,13 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
         self.load = on_load
         self.filter = on_filter
         self._fetch_task: Task | None = None
+        self._filter_task: Task | None = None
 
     def _cancel_task(self) -> None:
         if self._fetch_task and not self._fetch_task.done():
             self._fetch_task.cancel()
+        if self._filter_task and not self._filter_task.done():
+            self._filter_task.cancel()
 
     def _filter_items(self, search_text: str | None = None) -> list[str]:
         filtered_out_ids = set()
@@ -70,6 +73,26 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
 
         self._fetch_task = self.create_async_task(_fetch_item_list_task)
         return self._fetch_task
+
+    def filter_item_list(self, search_text: str | None = None) -> Task | None:
+        if self.data.load_status == LoadStatus.LOADING:
+            return None
+
+        self.data.load_status = LoadStatus.LOADING
+
+        async def _filter_item_list_task() -> None:
+            try:
+                self.data.filtered_out_ids = self._filter_items(search_text=search_text)
+                self.data.load_status = LoadStatus.LOADED
+
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                self.data.load_status = LoadStatus.ERROR
+                self.data.status_message = str(e)
+
+        self._filter_task = self.create_async_task(_filter_item_list_task)
+        return self._filter_task
 
     def update_item(self, updated_item: V) -> None:
         self.data.items = [updated_item if updated_item._id == item._id else item for item in self.data.items]
