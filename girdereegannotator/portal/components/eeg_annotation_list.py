@@ -1,97 +1,114 @@
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
+from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import AnnotationStatus
+from girdereegannotator.database.models import AnnotationStatus, EEGFileset, User
 from girdereegannotator.utils.components import Button
 
 
-class AnnotationList(v3.VList):
-    def __init__(self, user_id: str, fileset_id: str, annotations: str, select_callable: Signal, **kwargs) -> None:
+class AnnotationListItemElement(html.Div):
+    def __init__(self, annotation: str, **kwargs):
         super().__init__(**kwargs)
-
-        with self:
-            with html.Div(v_for=f"(annotation, annotation_index) in {annotations}"):
-                with v3.VListItem(
-                    classes="annotation-list-item",
-                    title=("annotation.name",),
-                ):
-                    v3.VIcon(v_if=f"{user_id} === annotation.annotator_id", icon="mdi-account-check")
-                    with v3.Template(v_slot_append=True):
-                        actions = AnnotationActions(user_id, fileset_id, "annotation")
-                        actions.edit_clicked.connect(select_callable)
-
-                    with v3.Template(v_slot_prepend=True):
-                        v3.VIcon(
-                            v_if=self._is_annotation_status(AnnotationStatus.IN_PROGRESS),
-                            icon="mdi-tag",
-                            color="warning",
-                        )
-                        v3.VIcon(
-                            v_else_if=self._is_annotation_status(AnnotationStatus.IN_REVIEW),
-                            icon="mdi-tag",
-                            color="info",
-                        )
-                        v3.VIcon(
-                            v_else_if=self._is_annotation_status(AnnotationStatus.DONE), icon="mdi-tag", color="success"
-                        )
-
-                v3.VDivider(v_if=f"annotation_index + 1 < {annotations}.length", classes="mx-4")
-
-            with html.Div(classes="d-flex justify-center"):
-                Button(
-                    click=(select_callable, f"[{fileset_id}]"),
-                    variant="flat",
-                    color="primary",
-                    prepend_icon="mdi-plus",
-                    text="New annotation",
-                )
+        self.user_state = TypedState(self.state, User)
+        self.annotation = annotation
 
     def _is_annotation_status(self, annotation_status: AnnotationStatus) -> str:
-        return f"(annotation.status === {annotation_status.value})"
+        return f"({self.annotation}.status === {annotation_status.value})"
+
+    def _is_annotation_author(self) -> str:
+        return f"({self.annotation}.annotator_id === {self.user_state.name._id})"
 
 
-class AnnotationActions(html.Div):
+class AnnotationListItemTag(AnnotationListItemElement):
+    def __init__(self, annotation: str, **kwargs):
+        super().__init__(annotation, classes="px-2", **kwargs)
+        with self:
+            v3.VIcon(
+                icon=(f"{self._is_annotation_author()} ? 'mdi-tag' : 'mdi-tag-hidden'",),
+                color=(
+                    f"{self._is_annotation_status(AnnotationStatus.IN_PROGRESS)} ? 'warning' : "
+                    f"({self._is_annotation_status(AnnotationStatus.IN_REVIEW)} ? 'info' : 'success')",
+                ),
+            )
+
+
+class AnnotationListItemActions(AnnotationListItemElement):
     view_clicked = Signal(str)
-    edit_clicked = Signal(str)
-    duplicate_clicked = Signal(str)
     delete_clicked = Signal(str)
 
-    def __init__(
-        self,
-        user_id: str,
-        fileset_id: str,
-        annotation: str,
-        **kwargs,
-    ):
-        super().__init__(classes="button-bar", **kwargs)
-
+    def __init__(self, annotation: str, **kwargs):
+        super().__init__(annotation, classes="button-bar", **kwargs)
         with self:
-            self._build_button(
+            self._build_action_button(
                 icon="mdi-eye",
                 color="secondary",
-                click=(self.view_clicked, f"[{fileset_id}, {annotation}._id]"),
+                click=(self.view_clicked, f"[{self.annotation}._id]"),
                 tooltip="View annotation",
             )
-            self._build_button(
-                icon="mdi-pencil",
-                color="secondary",
-                click=(self.edit_clicked, f"[{fileset_id}, {annotation}._id]"),
-                disabled=(f"{user_id} !== {annotation}.annotator_id",),
-                tooltip="Edit annotation",
-            )
-            self._build_button(
-                icon="mdi-content-copy",
-                click=(self.duplicate_clicked, f"[{annotation}._id]"),
-                tooltip="Duplicate annotation",
-            )
-            self._build_button(
+            self._build_action_button(
                 icon="mdi-close-circle-outline",
                 color="error",
-                click=(self.delete_clicked, f"[{annotation}._id]"),
-                disabled=(f"{user_id} !== {annotation}.annotator_id",),
+                click=(self.delete_clicked, f"[{self.annotation}._id]"),
+                disabled=(f"!{self._is_annotation_author()} || {self._is_annotation_status(AnnotationStatus.DONE)}",),
                 tooltip="Delete annotation",
             )
 
-    def _build_button(self, **kwargs) -> None:
-        Button(tooltip_location="top", tooltip_open_delay=800, **kwargs)
+    def _build_action_button(self, **kwargs) -> None:
+        Button(tooltip_location="top", tooltip_open_delay=800, density="compact", **kwargs)
+
+
+class AnnotationListItem(v3.VListItem):
+    view_clicked = Signal(str)
+    delete_clicked = Signal(str)
+
+    def __init__(self, annotation: str, build_actions: bool, **kwargs) -> None:
+        super().__init__(classes="annotation-list-item", title=(f"{annotation}.name",), **kwargs)
+        self.annotation = annotation
+
+        self.user_state = TypedState(self.state, User)
+        with self:
+            if build_actions:
+                with v3.Template(v_slot_append=True):
+                    actions = AnnotationListItemActions(annotation)
+                    self._connect_actions(actions)
+
+            with v3.Template(v_slot_prepend=True):
+                AnnotationListItemTag(annotation)
+
+    def _connect_actions(self, actions: AnnotationListItemActions) -> None:
+        actions.view_clicked.connect(self.view_clicked)
+        actions.delete_clicked.connect(self.delete_clicked)
+
+
+class AnnotationList(v3.VList):
+    new_clicked = Signal()
+    view_clicked = Signal(int | None)
+    delete_clicked = Signal(int)
+
+    def __init__(self, eeg_fileset_state: TypedState[EEGFileset], build_actions: bool = True, **kwargs) -> None:
+        super().__init__(classes="annotation-list", **kwargs)
+        self.eeg_fileset_state = eeg_fileset_state
+
+        with self:
+            with html.Div(v_for=f"(annotation, annotation_index) in {eeg_fileset_state.name.annotations_files}"):
+                list_item = AnnotationListItem("annotation", build_actions)
+                self._connect_list_item(list_item)
+
+                v3.VDivider(
+                    v_if=f"annotation_index + 1 < {eeg_fileset_state.name.annotations_files}.length", classes="mx-4"
+                )
+
+            if build_actions:
+                with html.Div(classes="d-flex justify-center"):
+                    Button(
+                        click=self.new_clicked,
+                        variant="flat",
+                        color="primary",
+                        prepend_icon="mdi-plus",
+                        text="New annotation",
+                    )
+
+    def _connect_list_item(self, list_item: AnnotationListItem) -> None:
+        list_item.view_clicked.connect(self.view_clicked)
+        list_item.delete_clicked.connect(self.delete_clicked)

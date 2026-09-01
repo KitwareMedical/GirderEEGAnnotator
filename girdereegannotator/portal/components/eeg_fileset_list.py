@@ -3,8 +3,9 @@ from dataclasses import dataclass, field
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
+from undo_stack import Signal
 
-from girdereegannotator.database.models import EEGFileset
+from girdereegannotator.database.models import AnnotationsFile, EEGFileset
 from girdereegannotator.utils.load_status import LoadStatus
 
 from .eeg_annotation_list import AnnotationList
@@ -20,8 +21,10 @@ class EEGFilesetListState:
 
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
+    annotation_selected = Signal(EEGFileset, AnnotationsFile)
+
     def __init__(
-        self, user_id: str, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
+        self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
     ) -> None:
         super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
@@ -36,12 +39,8 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
         with self.expand_slot:
             html.Div("Annotations", classes="text-secondary text-subtitle-1")
-            AnnotationList(
-                user_id=user_id,
-                fileset_id=self.item_state.name._id,
-                annotations=f"{self.item}.annotations_files",
-                select_callable=self.select_item,
-            )
+            annotation_list = AnnotationList(item_state)
+            self._connect_annotation_list(annotation_list)
 
             v3.VDivider()
 
@@ -53,7 +52,15 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         with self.count_slot:
             self.build_count("EEG filesets")
 
-    def select_item(self, eeg_fileset_id: str, annotation_id: str | None = None) -> None:
-        eeg_fileset = next(it for it in self.list_state.data.items if it._id == eeg_fileset_id)
+    def select_annotations_file(self, annotation_id: str) -> None:
+        eeg_fileset = self.item_state.get_dataclass()
         annotation = next((ann for ann in eeg_fileset.annotations_files if ann._id == annotation_id), None)
-        self.item_selected(eeg_fileset, annotation)
+        self.annotation_selected(eeg_fileset, annotation)
+
+    def create_new_annotation(self) -> None:
+        eeg_fileset = self.item_state.get_dataclass()
+        self.item_selected(eeg_fileset)
+
+    def _connect_annotation_list(self, annotation_list: AnnotationList) -> None:
+        annotation_list.new_clicked.connect(self.create_new_annotation)
+        annotation_list.view_clicked.connect(self.select_annotations_file)

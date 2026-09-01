@@ -7,9 +7,10 @@ from trame_server import Server
 from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import DatabaseError, Model
-from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
+
+from .components.expandable_list import ExpandableListState
 
 V = TypeVar("V", bound=Model)
 
