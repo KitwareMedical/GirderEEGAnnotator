@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from locale import getlocale
 from pathlib import Path
 from typing import TypeVar
@@ -54,7 +54,7 @@ class GirderDatabase(DatabaseInterface):
     @staticmethod
     def format_date(date_str: str) -> str:
         utc_dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f+00:00")
-        utc_dt = utc_dt.replace(tzinfo=timezone.utc)
+        utc_dt = utc_dt.replace(tzinfo=UTC)
         local_dt = utc_dt.astimezone()
         loc = getlocale()[0] or ""
         fmt = "%m/%d/%Y %I:%M %p" if loc.startswith("en_US") else "%d/%m/%Y %H:%M"
