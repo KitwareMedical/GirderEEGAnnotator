@@ -4,10 +4,7 @@ from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import AnnotationsFile, EEGFileset
-from girdereegannotator.portal.components.eeg_annotation_list import (
-    AnnotationListItem,
-    AnnotationListItemTag,
-)
+from girdereegannotator.portal.components.eeg_annotation_list import AnnotationListItem
 from girdereegannotator.utils.components import Button, Select
 
 
@@ -96,8 +93,10 @@ class AnnotationMenu(Select):
                 )
 
             with v3.Template(v_slot_selection="{ item }"):
-                AnnotationListItemTag(annotation="item.raw")
-                html.Div("{{ item.raw.name }}", classes="text-ellipsis")
+                AnnotationListItem(
+                    annotation="item.raw",
+                    build_actions=False,
+                )
 
     def _select_annotation(self, annotation_id: str) -> None:
         annotation = next(
