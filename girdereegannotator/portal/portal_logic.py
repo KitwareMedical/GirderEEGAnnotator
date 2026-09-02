@@ -85,10 +85,10 @@ class PortalLogic(BaseLogic[PortalState]):
         )
 
     def _matches_eeg_fileset_filter(
-        self, eeg_fileset: EEGFileset, status: Status | None = None, annotator: AnnotationAuthor | None = None
+        self, eeg_fileset: EEGFileset, status: Status | None = None, author: AnnotationAuthor | None = None
     ) -> bool:
         status = status or self.data.eeg_fileset_filter_state.status_state.status
-        annotator = annotator or self.data.eeg_fileset_filter_state.author_state.author
+        author = author or self.data.eeg_fileset_filter_state.author_state.author
 
         is_validated = self._is_eeg_fileset_validated(eeg_fileset)
 
@@ -101,10 +101,10 @@ class PortalLogic(BaseLogic[PortalState]):
         if status == Status.TO_DO:
             return not any(annotations_files)
 
-        if annotator == AnnotationAuthor.ME:
-            annotations_files = [ann for ann in annotations_files if ann.annotator_id == self.current_user.data._id]
-        elif annotator == AnnotationAuthor.NOT_ME:
-            annotations_files = [ann for ann in annotations_files if ann.annotator_id != self.current_user.data._id]
+        if author == AnnotationAuthor.ME:
+            annotations_files = [ann for ann in annotations_files if ann.author._id == self.current_user.data._id]
+        elif author == AnnotationAuthor.NOT_ME:
+            annotations_files = [ann for ann in annotations_files if ann.author._id != self.current_user.data._id]
 
         if status == Status.IN_REVIEW:
             return any(ann.status == AnnotationStatus.IN_REVIEW for ann in annotations_files)

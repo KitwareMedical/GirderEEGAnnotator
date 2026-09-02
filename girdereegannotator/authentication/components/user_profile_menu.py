@@ -24,14 +24,13 @@ class UserProfileMenu(v3.VMenu):
             with v3.Template(v_slot_activator="{ props : activatorProps }"):
                 Button(
                     v_bind="activatorProps",
-                    avatar_text=f"{{{{ {user_state.name.first_name}.charAt(0) }}}}{{{{ {user_state.name.last_name}.charAt(0) }}}}",
-                    text_transform="uppercase",
+                    avatar_text=f"{{{{ {user_state.name.short_name} }}}}",
                     color="secondary",
                 )
 
             with (
                 v3.VCard(
-                    title=("`${ " + user_state.name.first_name + " } ${ " + user_state.name.last_name + " }`",),
+                    title=(f"`${{ {user_state.name.name} }}`",),
                     subtitle=(user_state.name.login,),
                 ),
                 v3.VCardActions(),

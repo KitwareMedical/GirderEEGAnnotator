@@ -16,6 +16,7 @@ from ..models import (
     EEGFileset,
     EEGFilesetIdentifier,
     GirderModel,
+    User,
 )
 from .bids_helpers import BIDSContextManager, BIDSDerivativeContext, BIDSNamingStrategy
 
@@ -57,6 +58,15 @@ class GirderBIDSHandler:
         self.context = BIDSContextManager()
         self.naming = BIDSNamingStrategy()
         self.processor = EEGProcessor(self.naming)
+
+    def _get_user_from_id(self, user_id: str) -> User:
+        user_item = self.girder_client.getUser(user_id)
+        return User(
+            _id=user_item["_id"],
+            short_name=str(user_item["firstName"])[0].upper() + str(user_item["lastName"])[0].upper(),
+            name=" ".join([str(user_item["firstName"]).capitalize(), str(user_item["lastName"]).upper()]),
+            login=user_item["login"],
+        )
 
     def _load_asset_from_file(self, file: EEGFile | EEGFileset) -> GirderModel | None:
         assets = self.girder_client.listFile(itemId=file._id)
@@ -149,7 +159,9 @@ class GirderBIDSHandler:
 
         return [
             AnnotationsFile(
-                _id=annotations_file["_id"], name=annotations_file["name"], annotator_id=annotations_file["creatorId"]
+                _id=annotations_file["_id"],
+                name=annotations_file["name"],
+                author=self._get_user_from_id(annotations_file["creatorId"]),
             )
             for annotations_file in eeg_annotations_files
         ]
@@ -158,13 +170,13 @@ class GirderBIDSHandler:
         return self.naming.get_next_annotations_file_name(eeg_fileset)
 
     def upload_annotations_file(
-        self, eeg_fileset: EEGFileset, annotations_asset: Asset, annotator_id: str
+        self, eeg_fileset: EEGFileset, annotations_asset: Asset, author: User
     ) -> AnnotationsFile:
         ctx = self.context.get_fileset(eeg_fileset._id)
         file = self._upload_file(
             annotations_asset, ctx.derivatives_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
         )
-        return AnnotationsFile(_id=file._id, name=file.name, annotator_id=annotator_id)
+        return AnnotationsFile(_id=file._id, name=file.name, author=author)
 
     def download_file(self, file: EEGFile, path: Path, refresh: bool = False) -> Asset:
         asset = self._load_asset_from_file(file)

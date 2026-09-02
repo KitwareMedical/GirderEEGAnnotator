@@ -136,7 +136,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             self.rca_view.save_annotations_asset(self.data.annotations_asset.path)
 
             annotations_file: AnnotationsFile = self.ctrl.upload_annotations_file(eeg_fileset, annotations_asset)
-            return AnnotationsFile
+            return annotations_file
 
         except (FileNotFoundError, DatabaseError) as e:
             if annotations_file is None:

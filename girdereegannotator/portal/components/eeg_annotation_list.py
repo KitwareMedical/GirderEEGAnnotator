@@ -17,18 +17,30 @@ class AnnotationListItemElement(html.Div):
         return f"({self.annotation}.status === {annotation_status.value})"
 
     def _is_annotation_author(self) -> str:
-        return f"({self.annotation}.annotator_id === {self.user_state.name._id})"
+        return f"({self.annotation}.author._id === {self.user_state.name._id})"
 
 
-class AnnotationListItemTag(AnnotationListItemElement):
+class AnnotationListItemStatusTag(AnnotationListItemElement):
     def __init__(self, annotation: str, **kwargs):
         super().__init__(annotation, classes="px-2", **kwargs)
         with self:
             v3.VIcon(
-                icon=(f"{self._is_annotation_author()} ? 'mdi-tag' : 'mdi-tag-hidden'",),
+                icon="mdi-tag",
                 color=(
                     f"{self._is_annotation_status(AnnotationStatus.IN_PROGRESS)} ? 'warning' : "
                     f"({self._is_annotation_status(AnnotationStatus.IN_REVIEW)} ? 'info' : 'success')",
+                ),
+            )
+
+
+class AnnotationListItemAuthorTag(AnnotationListItemElement):
+    def __init__(self, annotation: str, **kwargs):
+        super().__init__(annotation, classes="px-2", **kwargs)
+        with self:
+            html.Div(
+                f"{{{{ {annotation}.author.login }}}}",
+                classes=(
+                    f"{self._is_annotation_author()} ? 'text-caption font-weight-medium text-secondary' : 'font-weight-medium text-caption'",
                 ),
             )
 
@@ -63,10 +75,7 @@ class AnnotationListItem(v3.VListItem):
     delete_clicked = Signal(str)
 
     def __init__(self, annotation: str, build_actions: bool, **kwargs) -> None:
-        super().__init__(classes="annotation-list-item", title=(f"{annotation}.name",), **kwargs)
-        self.annotation = annotation
-
-        self.user_state = TypedState(self.state, User)
+        super().__init__(classes="annotation-list-item", title=(f"{annotation}.name",), subtitle="aaaaa", **kwargs)
         with self:
             if build_actions:
                 with v3.Template(v_slot_append=True):
@@ -74,7 +83,10 @@ class AnnotationListItem(v3.VListItem):
                     self._connect_actions(actions)
 
             with v3.Template(v_slot_prepend=True):
-                AnnotationListItemTag(annotation)
+                AnnotationListItemStatusTag(annotation)
+
+            with v3.Template(v_slot_subtitle=True):
+                AnnotationListItemAuthorTag(annotation)
 
     def _connect_actions(self, actions: AnnotationListItemActions) -> None:
         actions.view_clicked.connect(self.view_clicked)
