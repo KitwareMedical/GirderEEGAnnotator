@@ -40,6 +40,12 @@ class Model:
 
 
 @dataclass
+class User(Model):
+    short_name: str | None = None
+    login: str | None = None
+
+
+@dataclass
 class Dataset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
 
@@ -56,7 +62,7 @@ class AnnotationStatus(Enum):
 
 @dataclass
 class AnnotationsFile(EEGFile):
-    annotator_id: str | None = None
+    author: User = field(default_factory=User)
     status: AnnotationStatus = AnnotationStatus.IN_PROGRESS
 
 
@@ -78,14 +84,3 @@ class EEGFileset(Model):
 class Asset:
     name: str | None = None
     path: str | None = None
-
-
-@dataclass
-class User(Model):
-    first_name: str | None = None
-    last_name: str | None = None
-    login: str | None = None
-    email: str | None = None
-
-    def as_params(self) -> dict[str, Any]:
-        return {"firstName": self.first_name, "lastName": self.last_name, "email": self.email}

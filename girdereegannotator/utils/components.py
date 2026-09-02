@@ -1,7 +1,7 @@
 from typing import Any
 
 from trame.widgets.html import Span
-from trame.widgets.vuetify3 import VAvatar, VBtn, VIcon, VTooltip
+from trame.widgets.vuetify3 import VAvatar, VBtn, VIcon, VSelect, VTooltip
 
 
 class Button(VBtn):
@@ -53,3 +53,17 @@ class Button(VBtn):
                     open_delay=tooltip_open_delay,
                     text=tooltip,
                 )
+
+
+class Select(VSelect):
+    def __init__(self, **kwargs):
+        super().__init__(
+            bg_color=kwargs.pop("bg_color", "surface-variant"),
+            color=kwargs.pop("color", "secondary"),
+            density=kwargs.pop("density", "comfortable"),
+            flat=kwargs.pop("flat", True),
+            hide_details=kwargs.pop("hide_details", True),
+            icon_color=kwargs.pop("icon_color", "secondary"),
+            variant=kwargs.pop("variant", "solo"),
+            **kwargs,
+        )

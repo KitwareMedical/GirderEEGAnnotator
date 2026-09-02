@@ -22,37 +22,38 @@ class EEGViewerState:
 
 class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
     def __init__(self, ref: str = "eegview", **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(classes="viewer", **kwargs)
         self._ref = ref
         self._root_elem_ref = f"trame.refs.{self._ref}.$refs.rootElem"
         self._init_typed_state(self.state, EEGViewerState)
 
-        with self:
-            with html.Div(style="height: 5px;"):
-                LoadProgress(v_if=self.is_load_status(LoadStatus.LOADING))
-            with html.Div(style="height: calc(100% - 5px);"), v3.VFadeTransition(mode="out-in"):
-                LoadErrorMessage(
-                    v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message}",
-                    status_message=self.name.status_message,
-                )
-                with (
-                    html.Div(v_else_if=self.is_load_status(LoadStatus.LOADED), classes="fill-height"),
-                    v3.VHover(
-                        v_slot="{ props }",
-                        update_modelValue=(
-                            "(value) => {if ("
-                            f"value && {self._root_elem_ref} != window.document.activeElement"
-                            ") {"
-                            f"{self._root_elem_ref}.focus();"
-                            "} }"
-                        ),
+        with self, v3.VFadeTransition(mode="out-in"):
+            with html.Div(v_if=self.is_load_status(LoadStatus.LOADING), classes="viewer__load"):
+                LoadProgress()
+
+            with html.Div(
+                v_else_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
+            ):
+                LoadErrorMessage(status_message=self.name.status_message)
+
+            with (
+                html.Div(v_else_if=self.is_load_status(LoadStatus.LOADED), classes="viewer__content"),
+                v3.VHover(
+                    v_slot="{ props }",
+                    update_modelValue=(
+                        "(value) => {if ("
+                        f"value && {self._root_elem_ref} != window.document.activeElement"
+                        ") {"
+                        f"{self._root_elem_ref}.focus();"
+                        "} }"
                     ),
-                ):
-                    self.rca = rca.RemoteControlledArea(
-                        v_bind="props",
-                        ref=self._ref,
-                        send_mouse_move=True,
-                    )
+                ),
+            ):
+                self.rca = rca.RemoteControlledArea(
+                    v_bind="props",
+                    ref=self._ref,
+                    send_mouse_move=True,
+                )
 
     def is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.name.load_status} == {load_status.value})"

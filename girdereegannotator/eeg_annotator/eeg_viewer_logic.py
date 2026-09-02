@@ -11,11 +11,10 @@ from girdereegannotator.database.models import (
     EEGFileset,
     FileExtension,
 )
-from girdereegannotator.eeg_annotator.components.rca_view import RCAViewError
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
-from .components import RCAView
+from .components import RCAView, RCAViewError
 from .eeg_viewer_ui import EEGViewerState, EEGViewerUI
 
 
@@ -33,14 +32,6 @@ def is_eeg_file(file: Asset) -> bool:
 
 def is_annotations_file(file: Asset) -> bool:
     return file.name.endswith(FileExtension.annotation)
-
-
-def upsert_annotations_file(
-    annotations_files: list[AnnotationsFile], new_annotations_file: AnnotationsFile
-) -> list[AnnotationsFile]:
-    if any(ann._id == new_annotations_file._id for ann in annotations_files):
-        return [new_annotations_file if ann._id == new_annotations_file._id else ann for ann in annotations_files]
-    return [*annotations_files, new_annotations_file]
 
 
 class EEGViewerLogic(BaseLogic[EEGViewerState]):
@@ -126,7 +117,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
                 self.data.status_message = str(e)
                 raise e
 
-            return updated_eeg_fileset
+            return updated_eeg_fileset, annotations_file
 
         self.reset_state()
         self.data.load_status = LoadStatus.LOADING
@@ -135,7 +126,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.task = self.create_async_task(_load)
         return self.task
 
-    def save_annotations_file(self, eeg_fileset: EEGFileset) -> None:
+    def save_annotations_file(self, eeg_fileset: EEGFileset) -> AnnotationsFile:
         try:
             if self._current_tmpdir is None:
                 raise RuntimeError("Temporary directory is not initialized")
@@ -145,7 +136,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             self.rca_view.save_annotations_asset(self.data.annotations_asset.path)
 
             annotations_file: AnnotationsFile = self.ctrl.upload_annotations_file(eeg_fileset, annotations_asset)
-            eeg_fileset.annotations_files = upsert_annotations_file(eeg_fileset.annotations_files, annotations_file)
+            return annotations_file
 
         except (FileNotFoundError, DatabaseError) as e:
             if annotations_file is None:

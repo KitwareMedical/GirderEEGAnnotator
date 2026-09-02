@@ -9,7 +9,7 @@ from girdereegannotator.utils.components import Button
 class UserProfileMenu(v3.VMenu):
     logout_clicked = Signal()
 
-    def __init__(self, user_state: TypedState[User], **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(
             close_on_content_click=False,
             scrim=True,
@@ -17,18 +17,20 @@ class UserProfileMenu(v3.VMenu):
             offset=10,
             **kwargs,
         )
+
+        user_state = TypedState(self.state, User)
+
         with self:
             with v3.Template(v_slot_activator="{ props : activatorProps }"):
                 Button(
                     v_bind="activatorProps",
-                    avatar_text=f"{{{{ {user_state.name.first_name}.charAt(0) }}}}{{{{ {user_state.name.last_name}.charAt(0) }}}}",
-                    text_transform="uppercase",
+                    avatar_text=f"{{{{ {user_state.name.short_name} }}}}",
                     color="secondary",
                 )
 
             with (
                 v3.VCard(
-                    title=("`${ " + user_state.name.first_name + " } ${ " + user_state.name.last_name + " }`",),
+                    title=(f"`${{ {user_state.name.name} }}`",),
                     subtitle=(user_state.name.login,),
                 ),
                 v3.VCardActions(),
