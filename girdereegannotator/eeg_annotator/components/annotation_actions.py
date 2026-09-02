@@ -31,14 +31,12 @@ class AnnotateActions(AnnotationActions):
                 click=self.annotation_saved,
                 tooltip="Save annotations",
             )
-            v3.VDivider(vertical=True)
             self._build_button(
                 icon="mdi-send",
                 click=self.annotation_submitted,
                 tooltip="Submit for review",
                 color="info",
             )
-            v3.VDivider(vertical=True)
             self._build_button(
                 icon="mdi-delete",
                 click=self.annotation_deleted,
@@ -61,7 +59,6 @@ class ReviewActions(AnnotationActions):
                 icon="mdi-check",
                 tooltip="Approve annotations",
             )
-            v3.VDivider(vertical=True)
             self._build_button(
                 click=self.annotation_rejected,
                 color="error",
@@ -75,7 +72,7 @@ class ReadonlyAction(AnnotationActions):
         super().__init__(**kwargs)
 
         with self:
-            v3.VIcon(icon="mdi-lock", color="secondary")
+            v3.VIcon(icon="mdi-lock", color="secondary", size="small")
             html.Div("READ-ONLY")
 
 

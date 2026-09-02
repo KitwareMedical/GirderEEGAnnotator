@@ -39,7 +39,7 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
         v3.VSpacer()
 
         with html.Div(classes="annotator-tool"):
-            html.Label("EEG fileset", classes="annotator-tool__label")
+            html.Label("EEG", classes="annotator-tool__label")
             with html.Div(classes="annotator-tool__content"):
                 fileset_input = FilesetInput()
                 self._connect_fileset_input(fileset_input)
@@ -47,20 +47,15 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
         v3.VSpacer()
 
         with html.Div(classes="annotator-tool"):
-            html.Label("Annotations file", classes="annotator-tool__label")
-            with html.Div(classes="annotator-tool__content"):
+            html.Label("Annotations", classes="annotator-tool__label")
+            with html.Div(classes="annotator-tool__content"), html.Div(classes="d-flex align-center fill-height"):
                 annotation_input = AnnotationInput(
                     annotations_file_state=self.get_sub_state(self.name.annotations_file),
                     eeg_fileset_state=self.get_sub_state(self.name.eeg_fileset),
                     eeg_fileset_validated=self._is_annotator_mode(EEGAnnotatorMode.DONE),
                 )
                 self._connect_annotation_input(annotation_input)
-
-        v3.VSpacer()
-
-        with html.Div(classes="annotator-tool"):
-            html.Label("Actions", classes="annotator-tool__label")
-            with html.Div(classes="annotator-tool__content"):
+                v3.VDivider(vertical=True)
                 annotate_actions = AnnotateActions(v_if=self._is_annotator_mode(EEGAnnotatorMode.ANNOTATE))
                 review_actions = ReviewActions(v_else_if=self._is_annotator_mode(EEGAnnotatorMode.REVIEW))
                 ReadonlyAction(
