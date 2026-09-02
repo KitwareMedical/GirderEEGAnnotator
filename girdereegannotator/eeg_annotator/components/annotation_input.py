@@ -21,7 +21,6 @@ class AnnotationMenu(Select):
         super().__init__(
             v_model=annotations_file_state.name._id,
             density="compact",
-            disabled=(f"!{eeg_fileset_state.name.annotations_files}.length",),
             item_title="name",
             item_value="_id",
             items=(eeg_fileset_state.name.annotations_files,),
@@ -45,6 +44,9 @@ class AnnotationMenu(Select):
                     annotation="item.raw",
                     build_actions=False,
                 )
+
+            with v3.Template(v_slot_no_data=True):
+                html.Div("No annotations yet", classes="pl-4 text-caption font-italic")
 
     def _select_annotation(self, annotation_id: str) -> None:
         annotation = next(

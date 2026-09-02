@@ -5,7 +5,11 @@ from trame.widgets import vuetify3 as v3
 from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
-from girdereegannotator.database.models import AnnotationsFile, EEGFileset
+from girdereegannotator.database.models import (
+    AnnotationsFile,
+    AnnotationStatus,
+    EEGFileset,
+)
 from girdereegannotator.utils.load_status import LoadStatus
 
 from .eeg_annotation_list import AnnotationList
@@ -23,18 +27,23 @@ class EEGFilesetListState:
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
     annotation_selected = Signal(EEGFileset, AnnotationsFile)
 
+    def _count_annotation_per_status(self, annotation_status: AnnotationStatus) -> str:
+        return f"{self.item}.annotations_files.filter(f => f.status === {annotation_status.value}).length"
+
+    def _build_annotation_status_chip(self, annotation_status: AnnotationStatus, **kwargs) -> None:
+        annotations_count = self._count_annotation_per_status(annotation_status)
+        v3.VChip(v_if=annotations_count, append_icon="mdi-tag", text=(annotations_count,), **kwargs)
+
     def __init__(
         self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
     ) -> None:
         super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
         with self.action_slot:
-            v3.VChip(
-                v_if=f"{self.item}.annotations_files.length",
-                append_icon="mdi-tag",
-                text=(f"{self.item}.annotations_files.length",),
-                color="warning",
-            )
+            self._build_annotation_status_chip(AnnotationStatus.IN_PROGRESS, color="warning")
+            self._build_annotation_status_chip(AnnotationStatus.IN_REVIEW, color="info")
+            self._build_annotation_status_chip(AnnotationStatus.DONE, color="success")
+
             self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
 
         with self.expand_slot:
