@@ -3,18 +3,21 @@ from asyncio import Task, to_thread
 
 from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
+from trame_server.utils.typed_state import TypedState
 
 from girdereegannotator.database.models import (
     AnnotationsFile,
+    AnnotationStatus,
     Asset,
     DatabaseError,
     EEGFileset,
     FileExtension,
+    User,
 )
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
 
-from .components import RCAView, RCAViewError
+from .components.rca_view import RCAView, RCAViewError, RCAViewMode
 from .eeg_viewer_ui import EEGViewerState, EEGViewerUI
 
 
@@ -42,6 +45,9 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.rca_view = RCAView()
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
         self.task: Task | None = None
+
+        self.current_user = TypedState(self.state, User)
+        self.bind_changes({self.name.mode: self.rca_view.update_viewer_mode})
 
     def set_ui(self, ui: EEGViewerUI) -> None:
         self.view_handler = ui.rca.create_view_handler(self.rca_view)
@@ -104,13 +110,26 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             ) from e
 
     def load_eeg_files(
-        self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None, is_new_eeg_fileset: bool
+        self,
+        eeg_fileset: EEGFileset,
+        annotations_file: AnnotationsFile | None,
+        is_new_eeg_fileset: bool,
     ) -> Task:
         async def _load() -> None:
             try:
-                updated_eeg_fileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
+                updated_eeg_fileset: EEGFileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
+
                 await to_thread(self._load_eeg_files, updated_eeg_fileset, annotations_file, is_new_eeg_fileset)
+
+                readonly = updated_eeg_fileset.is_validated
+                if not readonly and annotations_file is not None:
+                    readonly = not (
+                        annotations_file.status == AnnotationStatus.IN_PROGRESS
+                        and annotations_file.author._id == self.current_user.data._id
+                    )
+
                 self.data.load_status = LoadStatus.LOADED
+                self.data.mode = RCAViewMode.READONLY if readonly else RCAViewMode.EDIT
 
             except EEGViewerError as e:
                 self.data.load_status = LoadStatus.ERROR
@@ -131,6 +150,9 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             if self._current_tmpdir is None:
                 raise RuntimeError("Temporary directory is not initialized")
 
+            if eeg_fileset.is_validated:
+                raise EEGViewerError(f"{eeg_fileset.name} do not accept any more annotations")
+
             annotations_asset = self.data.annotations_asset
 
             self.rca_view.save_annotations_asset(self.data.annotations_asset.path)
@@ -139,8 +161,4 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             return annotations_file
 
         except (FileNotFoundError, DatabaseError) as e:
-            if annotations_file is None:
-                raise EEGViewerError(f"Could not save e: {eeg_fileset.name}") from e
-            raise EEGViewerError(
-                f"Could not load files into viewer: ({eeg_fileset.name}, {annotations_file.name})"
-            ) from e
+            raise EEGViewerError(f"Could not save annotations on {eeg_fileset.name}") from e
