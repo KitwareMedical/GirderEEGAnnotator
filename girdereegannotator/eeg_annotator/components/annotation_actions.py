@@ -1,0 +1,82 @@
+from trame.widgets import html
+from trame.widgets import vuetify3 as v3
+from undo_stack import Signal
+
+from girdereegannotator.utils.components import Button
+
+
+class AnnotationActions(html.Div):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(classes="annotation-actions", **kwargs)
+
+    def _build_button(self, **kwargs) -> None:
+        Button(
+            density="comfortable",
+            tooltip_location="bottom start",
+            **kwargs,
+        )
+
+
+class AnnotateActions(AnnotationActions):
+    annotation_saved = Signal()
+    annotation_submitted = Signal()
+    annotation_deleted = Signal()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self:
+            self._build_button(
+                icon="mdi-content-save-outline",
+                click=self.annotation_saved,
+                tooltip="Save annotations",
+            )
+            v3.VDivider(vertical=True)
+            self._build_button(
+                icon="mdi-send",
+                click=self.annotation_submitted,
+                tooltip="Submit for review",
+                color="info",
+            )
+            v3.VDivider(vertical=True)
+            self._build_button(
+                icon="mdi-delete",
+                click=self.annotation_deleted,
+                tooltip="Delete annotations file",
+                color="error",
+            )
+
+
+class ReviewActions(AnnotationActions):
+    annotation_approved = Signal()
+    annotation_rejected = Signal()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self:
+            self._build_button(
+                click=self.annotation_approved,
+                color="success",
+                icon="mdi-check",
+                tooltip="Approve annotations",
+            )
+            v3.VDivider(vertical=True)
+            self._build_button(
+                click=self.annotation_rejected,
+                color="error",
+                icon="mdi-close",
+                tooltip="Reject annotation",
+            )
+
+
+class ReadonlyAction(AnnotationActions):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self:
+            v3.VIcon(icon="mdi-lock", color="secondary")
+            html.Div("READ-ONLY")
+
+
+class NoAction(AnnotationActions): ...

@@ -75,11 +75,11 @@ class ExpandableList(html.Div, Generic[T, V]):
         self.item = "item"
 
         with self, v3.VFadeTransition(mode="out-in"):
-            with html.Div(v_if=self.is_load_status(LoadStatus.LOADING), classes="expandable-list__load"):
+            with html.Div(v_if=self._is_load_status(LoadStatus.LOADING), classes="expandable-list__load"):
                 LoadProgress()
 
             with html.Div(
-                v_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.list_state.name.status_message} != null",
+                v_if=f"{self._is_load_status(LoadStatus.ERROR)} && {self.list_state.name.status_message} != null",
                 classes="expandable-list__error",
             ):
                 LoadErrorMessage(status_message=self.list_state.name.status_message)
@@ -115,7 +115,7 @@ class ExpandableList(html.Div, Generic[T, V]):
                     classes="expandable-list__content-count",
                 )
 
-    def is_load_status(self, load_status: LoadStatus) -> str:
+    def _is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.list_state.name.load_status} == {load_status.value})"
 
     def build_select_item_button(self, **kwargs) -> None:

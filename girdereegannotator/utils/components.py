@@ -58,8 +58,9 @@ class Button(VBtn):
 class Select(VSelect):
     def __init__(self, **kwargs):
         super().__init__(
+            active=True,
             bg_color=kwargs.pop("bg_color", "surface-variant"),
-            color=kwargs.pop("color", "secondary"),
+            item_color=kwargs.pop("color", "secondary"),
             density=kwargs.pop("density", "comfortable"),
             flat=kwargs.pop("flat", True),
             hide_details=kwargs.pop("hide_details", True),

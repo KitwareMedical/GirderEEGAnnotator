@@ -21,7 +21,7 @@ from .portal_ui import PortalState, PortalUI
 
 
 class PortalLogic(BaseLogic[PortalState]):
-    eeg_fileset_selected = Signal(EEGFileset)
+    eeg_fileset_selected = Signal(EEGFileset, AnnotationsFile | None)
     eeg_fileset_unselected = Signal()
 
     def __init__(self, server: Server) -> None:
@@ -29,8 +29,6 @@ class PortalLogic(BaseLogic[PortalState]):
         self.current_dataset = self.get_sub_state(self.name.current_dataset)
         self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
         self.current_user = TypedState(self.state, User)
-
-        self.validation_threshold = 3
 
         self.dataset_list_logic = ListLogic[Dataset](
             server,
@@ -78,23 +76,15 @@ class PortalLogic(BaseLogic[PortalState]):
             for status in Status
         }
 
-    def _is_eeg_fileset_validated(self, eeg_fileset: EEGFileset) -> bool:
-        return (
-            sum(ann.status == AnnotationStatus.DONE for ann in eeg_fileset.annotations_files)
-            > self.validation_threshold
-        )
-
     def _matches_eeg_fileset_filter(
         self, eeg_fileset: EEGFileset, status: Status | None = None, author: AnnotationAuthor | None = None
     ) -> bool:
         status = status or self.data.eeg_fileset_filter_state.status_state.status
         author = author or self.data.eeg_fileset_filter_state.author_state.author
 
-        is_validated = self._is_eeg_fileset_validated(eeg_fileset)
-
-        if status == Status.DONE and not is_validated:
+        if status == Status.DONE and not eeg_fileset.is_validated:
             return False
-        if status not in [Status.DONE, Status.UNDEFINED] and is_validated:
+        if status not in [Status.DONE, Status.UNDEFINED] and eeg_fileset.is_validated:
             return False
 
         annotations_files = eeg_fileset.annotations_files

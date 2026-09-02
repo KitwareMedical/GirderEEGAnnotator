@@ -8,60 +8,6 @@ from girdereegannotator.portal.components.eeg_annotation_list import AnnotationL
 from girdereegannotator.utils.components import Button, Select
 
 
-class AnnotationInput(html.Div):
-    annotation_selected = Signal(AnnotationsFile | None)
-    annotation_saved = Signal()
-
-    def __init__(
-        self,
-        annotations_file_state: TypedState[AnnotationsFile],
-        eeg_fileset_state: TypedState[EEGFileset],
-        **kwargs,
-    ) -> None:
-        super().__init__(classes="annotation-input", **kwargs)
-
-        with self:
-            self._build_button(
-                disabled=(f"!{annotations_file_state.name._id}",),
-                click=self.annotation_selected,
-                color="secondary",
-                icon="mdi-plus",
-                tooltip="New annotation",
-            )
-            v3.VDivider(vertical=True)
-            with html.Div(classes="annotation-input__menu"):
-                annotation_menu = AnnotationMenu(
-                    annotations_file_state=annotations_file_state,
-                    eeg_fileset_state=eeg_fileset_state,
-                )
-                annotation_menu.annotation_selected.connect(self.annotation_selected)
-
-            v3.VDivider(vertical=True)
-            with html.Div(classes="annotation-input__actions"):
-                self._build_button(
-                    icon="mdi-content-save-outline",
-                    click=self.annotation_saved,
-                    tooltip="Save annotations",
-                )
-                self._build_button(
-                    icon="mdi-send",
-                    tooltip="Submit for review",
-                    color="info",
-                )
-                self._build_button(
-                    icon="mdi-delete",
-                    tooltip="Delete annotations file",
-                    color="error",
-                )
-
-    def _build_button(self, **kwargs) -> None:
-        Button(
-            density="comfortable",
-            tooltip_location="bottom start",
-            **kwargs,
-        )
-
-
 class AnnotationMenu(Select):
     annotation_selected = Signal(AnnotationsFile | None)
 
@@ -69,6 +15,7 @@ class AnnotationMenu(Select):
         self,
         annotations_file_state: TypedState[AnnotationsFile],
         eeg_fileset_state: TypedState[EEGFileset],
+        eeg_fileset_validated: str,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -78,7 +25,8 @@ class AnnotationMenu(Select):
             item_title="name",
             item_value="_id",
             items=(eeg_fileset_state.name.annotations_files,),
-            placeholder="New annotation",
+            placeholder=(f"{eeg_fileset_validated} ? 'Select an annotation' : 'New annotation'",),
+            rounded=True,
             **kwargs,
         )
         self.eeg_fileset_state = eeg_fileset_state
@@ -103,3 +51,33 @@ class AnnotationMenu(Select):
             (ann for ann in self.eeg_fileset_state.data.annotations_files if ann._id == annotation_id), None
         )
         self.annotation_selected(annotation)
+
+
+class AnnotationInput(html.Div):
+    annotation_selected = Signal(AnnotationsFile | None)
+
+    def __init__(
+        self,
+        annotations_file_state: TypedState[AnnotationsFile],
+        eeg_fileset_state: TypedState[EEGFileset],
+        eeg_fileset_validated: str,
+        **kwargs,
+    ) -> None:
+        super().__init__(classes="annotation-input", **kwargs)
+
+        with self:
+            Button(
+                click=self.annotation_selected,
+                color="secondary",
+                density="comfortable",
+                disabled=(f"!{annotations_file_state.name._id} || {eeg_fileset_validated}",),
+                icon="mdi-plus",
+                tooltip_location="bottom start",
+                tooltip="New annotation",
+            )
+
+            v3.VDivider(vertical=True)
+
+            with html.Div(classes="annotation-input__menu"):
+                annotation_menu = AnnotationMenu(annotations_file_state, eeg_fileset_state, eeg_fileset_validated)
+                annotation_menu.annotation_selected.connect(self.annotation_selected)

@@ -47,9 +47,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self._eeg_annotator_logic.reset_state()
         self.data.nav_state.window = NavigationWindow.UNDEFINED
 
-    def _on_eeg_fileset_selected(
-        self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None = None
-    ) -> None:
+    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None) -> None:
         self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset, annotations_file)
         self.data.nav_state.window = NavigationWindow.ANNOTATOR
 
