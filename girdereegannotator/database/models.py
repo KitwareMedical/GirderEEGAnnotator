@@ -2,6 +2,8 @@ from dataclasses import asdict, dataclass, field, fields
 from enum import Enum, auto
 from typing import Any
 
+VALIDATION_THRESHOLD = 3
+
 GirderModel = dict[str, Any]
 GirderParams = dict[str, Any]
 
@@ -78,6 +80,10 @@ class EEGFileset(Model):
     metadata: dict[str, str] = field(default_factory=dict)
     eeg: EEGFile = field(default_factory=EEGFile)
     annotations_files: list[AnnotationsFile] = field(default_factory=list)
+
+    @property
+    def is_validated(self) -> bool:
+        return sum(ann.status == AnnotationStatus.DONE for ann in self.annotations_files) >= VALIDATION_THRESHOLD
 
 
 @dataclass

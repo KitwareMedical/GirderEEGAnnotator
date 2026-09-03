@@ -21,16 +21,14 @@ from .portal_ui import PortalState, PortalUI
 
 
 class PortalLogic(BaseLogic[PortalState]):
-    eeg_fileset_selected = Signal(EEGFileset)
+    eeg_fileset_selected = Signal(EEGFileset, AnnotationsFile | None)
     eeg_fileset_unselected = Signal()
 
     def __init__(self, server: Server) -> None:
         super().__init__(server, PortalState)
-        self.current_dataset = self.get_sub_state(self.name.current_dataset)
-        self.current_eeg_fileset = self.get_sub_state(self.name.current_eeg_fileset)
-        self.current_user = TypedState(self.state, User)
-
-        self.validation_threshold = 3
+        self._dataset_state = self.get_sub_state(self.name.current_dataset)
+        self._eeg_fileset_state = self.get_sub_state(self.name.current_eeg_fileset)
+        self._user_state = TypedState(self.state, User)
 
         self.dataset_list_logic = ListLogic[Dataset](
             server,
@@ -60,13 +58,25 @@ class PortalLogic(BaseLogic[PortalState]):
         )
 
     @property
+    def dataset(self) -> Dataset:
+        return self._dataset_state.get_dataclass()
+
+    @dataset.setter
+    def dataset(self, value: Dataset) -> None:
+        self._dataset_state.set_dataclass(value)
+
+    @property
+    def eeg_fileset(self) -> EEGFileset:
+        return self._eeg_fileset_state.get_dataclass()
+
+    @eeg_fileset.setter
+    def eeg_fileset(self, value: EEGFileset) -> None:
+        self._eeg_fileset_state.set_dataclass(value)
+
+    @property
     def current_eeg_fileset_index(self) -> int:
         return next(
-            (
-                i
-                for i, item in enumerate(self.eeg_fileset_list_logic.data.items)
-                if item._id == self.current_eeg_fileset.data._id
-            ),
+            (i for i, item in enumerate(self.eeg_fileset_list_logic.data.items) if item._id == self.eeg_fileset._id),
             0,
         )
 
@@ -78,23 +88,15 @@ class PortalLogic(BaseLogic[PortalState]):
             for status in Status
         }
 
-    def _is_eeg_fileset_validated(self, eeg_fileset: EEGFileset) -> bool:
-        return (
-            sum(ann.status == AnnotationStatus.DONE for ann in eeg_fileset.annotations_files)
-            > self.validation_threshold
-        )
-
     def _matches_eeg_fileset_filter(
         self, eeg_fileset: EEGFileset, status: Status | None = None, author: AnnotationAuthor | None = None
     ) -> bool:
         status = status or self.data.eeg_fileset_filter_state.status_state.status
         author = author or self.data.eeg_fileset_filter_state.author_state.author
 
-        is_validated = self._is_eeg_fileset_validated(eeg_fileset)
-
-        if status == Status.DONE and not is_validated:
+        if status == Status.DONE and not eeg_fileset.is_validated:
             return False
-        if status not in [Status.DONE, Status.UNDEFINED] and is_validated:
+        if status not in [Status.DONE, Status.UNDEFINED] and eeg_fileset.is_validated:
             return False
 
         annotations_files = eeg_fileset.annotations_files
@@ -102,9 +104,9 @@ class PortalLogic(BaseLogic[PortalState]):
             return not any(annotations_files)
 
         if author == AnnotationAuthor.ME:
-            annotations_files = [ann for ann in annotations_files if ann.author._id == self.current_user.data._id]
+            annotations_files = [ann for ann in annotations_files if ann.author._id == self._user_state.data._id]
         elif author == AnnotationAuthor.NOT_ME:
-            annotations_files = [ann for ann in annotations_files if ann.author._id != self.current_user.data._id]
+            annotations_files = [ann for ann in annotations_files if ann.author._id != self._user_state.data._id]
 
         if status == Status.IN_REVIEW:
             return any(ann.status == AnnotationStatus.IN_REVIEW for ann in annotations_files)
@@ -124,14 +126,14 @@ class PortalLogic(BaseLogic[PortalState]):
     def fetch_eeg_filesets(self) -> Task | None:
         self.data.eeg_fileset_filter_state.status_state.counts = {}
 
-        if self.current_dataset.data._id is None:
+        if self.dataset._id is None:
             self.data.eeg_fileset_filter_state.status_state.status = Status.UNDEFINED
             self.data.eeg_fileset_filter_state.author_state.author = AnnotationAuthor.UNDEFINED
             self.eeg_fileset_list_logic.reset()
             return None
 
         return self.eeg_fileset_list_logic.fetch_item_list(
-            dataset=self.current_dataset.get_dataclass(),
+            dataset=self.dataset,
             search_text=self.data.eeg_fileset_filter_state.search_state.search_text,
         )
 
@@ -145,44 +147,42 @@ class PortalLogic(BaseLogic[PortalState]):
 
     def refresh(self) -> None:
         """Reloads the active view from scratch."""
-        if self.current_dataset.data._id is None:
-            self.current_dataset.set_dataclass(Dataset())
+        if self.dataset._id is None:
+            self.dataset = Dataset()
             self.fetch_datasets()
         else:
-            self.current_eeg_fileset.set_dataclass(EEGFileset())
+            self.eeg_fileset = EEGFileset()
             self.fetch_eeg_filesets()
 
     def _on_dataset_selected(self, dataset: Dataset) -> None:
-        self.current_dataset.set_dataclass(dataset)
+        self.dataset = dataset
         self.data.current_breadcrumbs_element = BreadcrumbsElement.DATASET
         self.fetch_eeg_filesets()
 
     def _on_eeg_fileset_selected(
         self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None = None
     ) -> None:
-        self.current_eeg_fileset.set_dataclass(eeg_fileset)
+        self.eeg_fileset = eeg_fileset
         self.data.current_breadcrumbs_element = BreadcrumbsElement.EEG_FILESET
         self.eeg_fileset_selected(eeg_fileset, annotations_file)
 
     def _on_dataset_expanded(self, dataset: Dataset | None) -> None:
-        self.current_dataset.set_dataclass(dataset if dataset is not None else Dataset())
+        self.dataset = dataset if dataset is not None else Dataset()
 
     def _on_eeg_fileset_expanded(self, eeg_fileset: EEGFileset | None) -> None:
-        self.current_eeg_fileset.set_dataclass(eeg_fileset if eeg_fileset is not None else EEGFileset())
+        self.eeg_fileset = eeg_fileset if eeg_fileset is not None else EEGFileset()
 
     def clear_eeg_selection(self) -> None:
         self.eeg_fileset_unselected()
-        # self.fetch_eeg_filesets()
 
     def clear_dataset_selection(self) -> None:
-        self.current_eeg_fileset.set_dataclass(EEGFileset())
+        self.eeg_fileset = EEGFileset()
         self.clear_eeg_selection()
-        # self.fetch_datasets()
 
     def _on_breadcrumbs_navigated(self, target: BreadcrumbsElement) -> None:
-        if target == BreadcrumbsElement.ROOT and self.current_dataset.data._id is not None:
+        if target == BreadcrumbsElement.ROOT and self.dataset._id is not None:
             self.clear_dataset_selection()
-        elif target == BreadcrumbsElement.DATASET and self.current_eeg_fileset.data._id is not None:
+        elif target == BreadcrumbsElement.DATASET and self.eeg_fileset._id is not None:
             self.clear_eeg_selection()
 
     def step_eeg_selection(self, offset: int) -> None:
@@ -219,7 +219,7 @@ class PortalLogic(BaseLogic[PortalState]):
         """Replaces the active item in memory without triggering a full refresh."""
         self.eeg_fileset_list_logic.update_item(updated_fileset)
         if self._matches_eeg_fileset_filter(updated_fileset):
-            self.current_eeg_fileset.set_dataclass(updated_fileset)
+            self.eeg_fileset = updated_fileset
         else:
             self.eeg_fileset_list_logic.exclude_item(updated_fileset)
 
