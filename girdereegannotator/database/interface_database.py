@@ -49,6 +49,10 @@ class DatabaseInterface(ABC):
     def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
         pass
 
+    @abstractmethod
+    def delete_annotations_file(self, annotations_file: AnnotationsFile) -> None:
+        pass
+
 
 def register_interface(interface: DatabaseInterface, controller: Controller) -> None:
     """Register all interface methods in the controller"""

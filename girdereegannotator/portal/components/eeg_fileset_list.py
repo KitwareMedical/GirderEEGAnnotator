@@ -26,6 +26,7 @@ class EEGFilesetListState:
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
     annotation_selected = Signal(EEGFileset, AnnotationsFile)
+    annotation_deleted = Signal(AnnotationsFile)
 
     def _count_annotation_per_status(self, annotation_status: AnnotationStatus) -> str:
         return f"{self.item}.annotations_files.filter(f => f.status === {annotation_status.value}).length"
@@ -70,6 +71,12 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         eeg_fileset = self.item_state.get_dataclass()
         self.item_selected(eeg_fileset)
 
+    def delete_annotation(self, annotation_id: str) -> None:
+        eeg_fileset = self.item_state.get_dataclass()
+        annotation = next((ann for ann in eeg_fileset.annotations_files if ann._id == annotation_id), None)
+        self.annotation_deleted(annotation)
+
     def _connect_annotation_list(self, annotation_list: AnnotationList) -> None:
-        annotation_list.new_clicked.connect(self.create_new_annotation)
-        annotation_list.view_clicked.connect(self.select_annotations_file)
+        annotation_list.new_annotation_clicked.connect(self.create_new_annotation)
+        annotation_list.annotation_selected.connect(self.select_annotations_file)
+        annotation_list.delete_clicked.connect(self.delete_annotation)

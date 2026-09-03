@@ -99,6 +99,13 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         save_task = self._viewer_logic.save_annotations_file(self.eeg_fileset, self.annotations_file, annotation_status)
         save_task.add_done_callback(self._on_task_finished)
 
+    def _delete_annotations_file(self) -> None:
+        if self.annotations_file.author._id != self._user_state.data._id:
+            return
+
+        delete_task = self._viewer_logic.delete_annotations_file(self.eeg_fileset, self.annotations_file)
+        delete_task.add_done_callback(self._on_task_finished)
+
     def reset_state(self) -> None:
         super().reset_state()
         self._viewer_logic.reset_state()
@@ -111,3 +118,4 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         ui.annotation_selected.connect(self._on_annotations_file_selected)
         ui.annotation_saved.connect(self._save_annotations_file)
         ui.annotation_status_changed.connect(self._save_annotations_file)
+        ui.annotation_deleted.connect(self._delete_annotations_file)

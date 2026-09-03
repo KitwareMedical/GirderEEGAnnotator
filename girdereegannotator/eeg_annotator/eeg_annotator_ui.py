@@ -10,6 +10,9 @@ from girdereegannotator.database.models import (
     AnnotationStatus,
     EEGFileset,
 )
+from girdereegannotator.portal.components.eeg_annotation_list import (
+    AnnotationDeleteDialog,
+)
 from girdereegannotator.utils.base_ui import BaseUI
 
 from .components import (
@@ -54,6 +57,11 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
         with self:
             self.viewer_ui = EEGViewerUI()
 
+            self.delete_dialog = AnnotationDeleteDialog(
+                namespace="viewer",
+                on_delete=lambda _annotation_id: self.annotation_deleted(),
+            )
+
     def build_toolbar(self) -> None:
         v3.VSpacer()
 
@@ -75,7 +83,11 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                 )
                 self._connect_annotation_input(annotation_input)
                 v3.VDivider(vertical=True)
-                annotate_actions = AnnotateActions(v_if=self._is_annotator_mode(EEGAnnotatorMode.ANNOTATE))
+                annotate_actions = AnnotateActions(
+                    v_if=self._is_annotator_mode(EEGAnnotatorMode.ANNOTATE),
+                    annotation_name=self.name.annotations_file.name,
+                    annotation_id=self.name.annotations_file._id,
+                )
                 review_actions = ReviewActions(v_else_if=self._is_annotator_mode(EEGAnnotatorMode.REVIEW))
                 ReadonlyAction(
                     v_else_if=f"{self._is_annotator_mode(EEGAnnotatorMode.READONLY)} || {self._is_annotator_mode(EEGAnnotatorMode.DONE)}"
@@ -104,7 +116,7 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
             lambda: self.annotation_status_changed(AnnotationStatus.IN_REVIEW)
         )
         annotate_actions.annotation_saved.connect(self.annotation_saved)
-        annotate_actions.annotation_deleted.connect(self.annotation_deleted)
+        annotate_actions.annotation_deleted.connect(self.delete_dialog.set_annotation_to_delete)
 
     def _connect_review_actions(self, review_actions: ReviewActions) -> None:
         review_actions.annotation_approved.connect(lambda: self.annotation_status_changed(AnnotationStatus.DONE))

@@ -1,3 +1,5 @@
+from typing import Any
+
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from undo_stack import Signal
@@ -20,28 +22,29 @@ class AnnotationActions(html.Div):
 class AnnotateActions(AnnotationActions):
     annotation_saved = Signal()
     annotation_submitted = Signal()
-    annotation_deleted = Signal()
+    annotation_deleted = Signal(dict[str, Any])
 
-    def __init__(self, **kwargs):
+    def __init__(self, annotation_name: str, annotation_id: str, **kwargs):
         super().__init__(**kwargs)
 
         with self:
             self._build_button(
-                icon="mdi-content-save-outline",
                 click=self.annotation_saved,
+                icon="mdi-content-save-outline",
                 tooltip="Save annotations",
             )
             self._build_button(
-                icon="mdi-send",
                 click=self.annotation_submitted,
-                tooltip="Submit for review",
                 color="info",
+                icon="mdi-send",
+                tooltip="Submit for review",
             )
             self._build_button(
-                icon="mdi-delete",
-                click=self.annotation_deleted,
-                tooltip="Delete annotations file",
+                click=(self.annotation_deleted, f"[{{ name: {annotation_name}, _id: {annotation_id} }}]"),
                 color="error",
+                disabled=(f"!{annotation_id}",),
+                icon="mdi-delete",
+                tooltip="Delete annotations file",
             )
 
 
