@@ -51,7 +51,7 @@ class AnnotatorAppUI:
             client.Style(
                 "html { overflow-y: hidden; } "
                 ".annotation-actions { width: 130px; height: 100%; display: flex; align-items: center; justify-content: space-around }"
-                ".annotation-input { width: 300px; height: 100%; display: flex; align-items: center; }"
+                ".annotation-input { width: 450px; height: 100%; display: flex; align-items: center; }"
                 ".annotation-input__menu .v-field { background-color: inherit; }"
                 ".annotation-input__menu .v-field__input:has(.v-select__selection) { padding: 0; }"
                 ".annotation-input__menu { height: 100%; display: flex; flex-grow: 1; }"
