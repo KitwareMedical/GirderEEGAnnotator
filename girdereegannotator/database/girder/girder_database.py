@@ -175,3 +175,11 @@ class GirderDatabase(DatabaseInterface):
             raise DatabaseError(
                 f"Could not upload annotations file {annotations_asset.name} to {eeg_fileset.name}: {handle_database_error(e)}"
             ) from e
+
+    def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
+        try:
+            self.bids_handler.update_annotation_status(annotations_file)
+        except GirderHTTPError as e:
+            raise DatabaseError(
+                f"Could not update annotations file ({annotations_file.name}) status to {annotations_file.status.value}: {handle_database_error(e)}"
+            ) from e

@@ -218,10 +218,11 @@ class PortalLogic(BaseLogic[PortalState]):
     def update_eeg_fileset_in_list(self, updated_fileset: EEGFileset) -> None:
         """Replaces the active item in memory without triggering a full refresh."""
         self.eeg_fileset_list_logic.update_item(updated_fileset)
+        self.eeg_fileset = updated_fileset
         if self._matches_eeg_fileset_filter(updated_fileset):
-            self.eeg_fileset = updated_fileset
+            self.eeg_fileset_list_logic.include_item(updated_fileset._id)
         else:
-            self.eeg_fileset_list_logic.exclude_item(updated_fileset)
+            self.eeg_fileset_list_logic.exclude_item(updated_fileset._id)
 
     def set_ui(self, ui: PortalUI) -> None:
         # Toolbar bindings

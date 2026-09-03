@@ -1,8 +1,15 @@
+from dataclasses import dataclass, field
+from enum import Enum, auto
+
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from undo_stack import Signal
 
-from girdereegannotator.database.models import AnnotationsFile
+from girdereegannotator.database.models import (
+    AnnotationsFile,
+    AnnotationStatus,
+    EEGFileset,
+)
 from girdereegannotator.utils.base_ui import BaseUI
 
 from .components import (
@@ -14,19 +21,31 @@ from .components import (
     ReviewActions,
     ShortcutsPanel,
 )
-from .eeg_annotator_state import EEGAnnotatorMode, EEGAnnotatorState
 from .eeg_viewer_ui import EEGViewerUI
+
+
+class EEGAnnotatorMode(Enum):
+    UNDEFINED = auto()
+    READONLY = auto()
+    ANNOTATE = auto()
+    REVIEW = auto()
+    DONE = auto()
+
+
+@dataclass
+class EEGAnnotatorState:
+    eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
+    annotations_file: AnnotationsFile = field(default_factory=AnnotationsFile)
+    mode: EEGAnnotatorMode = EEGAnnotatorMode.UNDEFINED
 
 
 class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     previous_clicked = Signal()
     next_clicked = Signal()
-    annotation_saved = Signal()
-    annotation_submitted = Signal()
-    annotation_deleted = Signal()
-    annotation_approved = Signal()
-    annotation_rejected = Signal()
     annotation_selected = Signal(AnnotationsFile | None)
+    annotation_saved = Signal()
+    annotation_status_changed = Signal(AnnotationStatus)
+    annotation_deleted = Signal()
 
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="annotator", **kwargs)
@@ -81,10 +100,12 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
         annotation_input.annotation_selected.connect(self.annotation_selected)
 
     def _connect_annotate_actions(self, annotate_actions: AnnotateActions) -> None:
-        annotate_actions.annotation_submitted.connect(self.annotation_submitted)
+        annotate_actions.annotation_submitted.connect(
+            lambda: self.annotation_status_changed(AnnotationStatus.IN_REVIEW)
+        )
         annotate_actions.annotation_saved.connect(self.annotation_saved)
         annotate_actions.annotation_deleted.connect(self.annotation_deleted)
 
     def _connect_review_actions(self, review_actions: ReviewActions) -> None:
-        review_actions.annotation_approved.connect(self.annotation_approved)
-        review_actions.annotation_rejected.connect(self.annotation_rejected)
+        review_actions.annotation_approved.connect(lambda: self.annotation_status_changed(AnnotationStatus.DONE))
+        review_actions.annotation_rejected.connect(lambda: self.annotation_status_changed(AnnotationStatus.IN_PROGRESS))

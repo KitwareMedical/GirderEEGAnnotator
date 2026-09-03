@@ -45,6 +45,10 @@ class DatabaseInterface(ABC):
     def upload_annotations_file(self, eeg_fileset: EEGFileset, eeg_annotations_asset: Asset) -> AnnotationsFile:
         pass
 
+    @abstractmethod
+    def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
+        pass
+
 
 def register_interface(interface: DatabaseInterface, controller: Controller) -> None:
     """Register all interface methods in the controller"""
