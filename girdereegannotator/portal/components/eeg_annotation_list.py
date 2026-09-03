@@ -27,7 +27,10 @@ class AnnotationListItemStatusTag(AnnotationListItemElement):
         super().__init__(annotation, classes="px-2", **kwargs)
         with self:
             v3.VIcon(
-                icon="mdi-tag",
+                icon=(
+                    f"{self._is_annotation_status(AnnotationStatus.IN_PROGRESS)} ? 'mdi-tag-edit' : "
+                    f"({self._is_annotation_status(AnnotationStatus.IN_REVIEW)} ? 'mdi-tag-arrow-up' : 'mdi-tag-check')",
+                ),
                 color=(
                     f"{self._is_annotation_status(AnnotationStatus.IN_PROGRESS)} ? 'warning' : "
                     f"({self._is_annotation_status(AnnotationStatus.IN_REVIEW)} ? 'info' : 'success')",

@@ -33,7 +33,11 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
 
     def _build_annotation_status_chip(self, annotation_status: AnnotationStatus, **kwargs) -> None:
         annotations_count = self._count_annotation_per_status(annotation_status)
-        v3.VChip(v_if=annotations_count, append_icon="mdi-tag", text=(annotations_count,), **kwargs)
+        v3.VChip(
+            v_if=annotations_count,
+            text=(annotations_count,),
+            **kwargs,
+        )
 
     def __init__(
         self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
@@ -41,9 +45,11 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
         with self.action_slot:
-            self._build_annotation_status_chip(AnnotationStatus.IN_PROGRESS, color="warning")
-            self._build_annotation_status_chip(AnnotationStatus.IN_REVIEW, color="info")
-            self._build_annotation_status_chip(AnnotationStatus.DONE, color="success")
+            self._build_annotation_status_chip(
+                AnnotationStatus.IN_PROGRESS, color="warning", append_icon="mdi-tag-edit"
+            )
+            self._build_annotation_status_chip(AnnotationStatus.IN_REVIEW, color="info", append_icon="mdi-tag-arrow-up")
+            self._build_annotation_status_chip(AnnotationStatus.DONE, color="success", append_icon="mdi-tag-check")
 
             self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
 
