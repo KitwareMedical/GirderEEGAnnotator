@@ -89,11 +89,13 @@ class ExpandableList(html.Div, Generic[T, V]):
                 classes="expandable-list__content",
             ):
                 with (
-                    v3.VVirtualScroll(classes="expandable-list__content-list", items=(list_state.name.items,)),
-                    v3.Template(v_slot_default=f"{{ {self.item} }}"),
-                    html.Div(
-                        v_if=f"!{list_state.name.filtered_out_ids}.includes({self.item}._id)",
+                    v3.VVirtualScroll(
+                        classes="expandable-list__content-list",
+                        items=(
+                            f"{list_state.name.items}.filter(item => !{list_state.name.filtered_out_ids}.includes(item._id))",
+                        ),
                     ),
+                    v3.Template(v_slot_default=f"{{ {self.item} }}"),
                 ):
                     with (
                         ExpandableListItem(

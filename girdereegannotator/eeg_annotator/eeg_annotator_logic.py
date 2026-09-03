@@ -12,11 +12,11 @@ from girdereegannotator.database.models import (
 )
 from girdereegannotator.utils.base_logic import BaseLogic
 
-from .eeg_annotator_ui import EEGAnnotatorMode, EEGAnnotatorState, EGGAnnotatorUI
+from .eeg_annotator_ui import EEGAnnotatorMode, EEGAnnotatorState, EEGAnnotatorUI
 from .eeg_viewer_logic import EEGViewerLogic
 
 
-class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
+class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
     next_clicked = Signal()
     previous_clicked = Signal()
     eeg_fileset_updated = Signal(EEGFileset)
@@ -64,14 +64,8 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
             ):
                 mode = EEGAnnotatorMode.ANNOTATE
 
-            elif (
-                self.annotations_file.status == AnnotationStatus.IN_REVIEW
-                and self.annotations_file.author._id != self._user_state.data._id
-            ):
+            elif self.annotations_file.status == AnnotationStatus.IN_REVIEW:
                 mode = EEGAnnotatorMode.REVIEW
-
-            else:
-                mode = EEGAnnotatorMode.READONLY
 
         self.data.mode = mode
 
@@ -95,18 +89,27 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         load_task = self._viewer_logic.load_eeg_files(eeg_fileset, annotations_file, is_new_eeg_fileset)
         load_task.add_done_callback(self._on_task_finished)
 
-    def _save_annotations_file(self) -> None:
-        save_task = self._viewer_logic.save_annotations_file(self.eeg_fileset)
+    def _save_annotations_file(self, annotation_status: AnnotationStatus | None = None) -> None:
+        save_task = self._viewer_logic.save_annotations_file(self.eeg_fileset, self.annotations_file, annotation_status)
         save_task.add_done_callback(self._on_task_finished)
+
+    def _delete_annotations_file(self) -> None:
+        if self.annotations_file.author._id != self._user_state.data._id:
+            return
+
+        delete_task = self._viewer_logic.delete_annotations_file(self.eeg_fileset, self.annotations_file)
+        delete_task.add_done_callback(self._on_task_finished)
 
     def reset_state(self) -> None:
         super().reset_state()
         self._viewer_logic.reset_state()
 
-    def set_ui(self, ui: EGGAnnotatorUI) -> None:
+    def set_ui(self, ui: EEGAnnotatorUI) -> None:
         self._viewer_logic.set_ui(ui.viewer_ui)
 
         ui.previous_clicked.connect(self.previous_clicked)
         ui.next_clicked.connect(self.next_clicked)
         ui.annotation_selected.connect(self._on_annotations_file_selected)
         ui.annotation_saved.connect(self._save_annotations_file)
+        ui.annotation_status_changed.connect(self._save_annotations_file)
+        ui.annotation_deleted.connect(self._delete_annotations_file)

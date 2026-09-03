@@ -57,6 +57,7 @@ class EEGFile(Model): ...
 
 
 class AnnotationStatus(Enum):
+    UNDEFINED = auto()
     IN_PROGRESS = auto()
     IN_REVIEW = auto()
     DONE = auto()

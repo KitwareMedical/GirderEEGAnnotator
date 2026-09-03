@@ -4,7 +4,7 @@ from girdereegannotator.database.models import AnnotationsFile, EEGFileset
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from ..authentication import AuthenticationLogic
-from ..eeg_annotator import EGGAnnotatorLogic
+from ..eeg_annotator import EEGAnnotatorLogic
 from ..portal import PortalLogic
 from .app_ui import AnnotatorAppState, AnnotatorAppUI
 from .components.navigation_card import NavigationWindow
@@ -15,7 +15,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         super().__init__(server, AnnotatorAppState)
 
         self._portal_logic = PortalLogic(self.server)
-        self._eeg_annotator_logic = EGGAnnotatorLogic(self.server)
+        self._eeg_annotator_logic = EEGAnnotatorLogic(self.server)
         self._auth_logic = AuthenticationLogic(server)
 
         self._eeg_annotator_logic.next_clicked.connect(self._portal_logic.select_next_eeg)

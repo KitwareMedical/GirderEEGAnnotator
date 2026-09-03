@@ -1,4 +1,4 @@
-from asyncio import Task
+from asyncio import Task, to_thread
 
 from trame_server import Server
 from trame_server.utils.typed_state import TypedState
@@ -215,17 +215,28 @@ class PortalLogic(BaseLogic[PortalState]):
     def select_next_eeg(self) -> None:
         self.step_eeg_selection(1)
 
+    def _delete_annotations_file(self, annotations_file: AnnotationsFile) -> None:
+        if annotations_file.author._id != self._user_state.data._id:
+            return
+
+        async def _delete() -> None:
+            await to_thread(self.ctrl.delete_annotations_file, annotations_file)
+            updated_fileset = await to_thread(self.ctrl.refresh_eeg_fileset, self.eeg_fileset)
+            self.update_eeg_fileset_in_list(updated_fileset)
+
+        self.create_async_task(_delete)
+
     def update_eeg_fileset_in_list(self, updated_fileset: EEGFileset) -> None:
         """Replaces the active item in memory without triggering a full refresh."""
         self.eeg_fileset_list_logic.update_item(updated_fileset)
+        self.eeg_fileset = updated_fileset
         if self._matches_eeg_fileset_filter(updated_fileset):
-            self.eeg_fileset = updated_fileset
+            self.eeg_fileset_list_logic.include_item(updated_fileset._id)
         else:
-            self.eeg_fileset_list_logic.exclude_item(updated_fileset)
+            self.eeg_fileset_list_logic.exclude_item(updated_fileset._id)
 
     def set_ui(self, ui: PortalUI) -> None:
         # Toolbar bindings
-        ui.refresh_clicked.connect(self.refresh)
         ui.refresh_clicked.connect(self.refresh)
 
         # Dataset bindings
@@ -237,4 +248,5 @@ class PortalLogic(BaseLogic[PortalState]):
         ui.eeg_fileset_list.item_selected.connect(self._on_eeg_fileset_selected)
         ui.eeg_fileset_list.annotation_selected.connect(self._on_eeg_fileset_selected)
         ui.eeg_fileset_list.item_expanded.connect(self._on_eeg_fileset_expanded)
+        ui.eeg_fileset_list.annotation_deleted.connect(self._delete_annotations_file)
         ui.eeg_fileset_filters.filter_changed.connect(self.filter_eeg_filesets)

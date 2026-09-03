@@ -1,4 +1,4 @@
-# Contributing to GirderEGGAnnotator
+# Contributing to GirderEEGAnnotator
 
 1. Clone the repository using ``git clone``
 2. Install the dev dependencies in your
@@ -17,7 +17,7 @@ pip install -e ."[dev]"
 
 ## Commit messages
 
-GirderEGGAnnotator follows trame\'s commit message convention to be compatible with
+GirderEEGAnnotator follows trame\'s commit message convention to be compatible with
 its CI features including the auto semantic release.
 
 ## Tips

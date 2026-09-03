@@ -10,6 +10,7 @@ from girdereegannotator.utils.eeg import filter_eeg
 
 from ..models import (
     AnnotationsFile,
+    AnnotationStatus,
     Asset,
     Dataset,
     EEGFile,
@@ -162,6 +163,7 @@ class GirderBIDSHandler:
                 _id=annotations_file["_id"],
                 name=annotations_file["name"],
                 author=self._get_user_from_id(annotations_file["creatorId"]),
+                status=AnnotationStatus(annotations_file["bids_metadata"].get("status", AnnotationStatus.IN_PROGRESS)),
             )
             for annotations_file in eeg_annotations_files
         ]
@@ -177,6 +179,12 @@ class GirderBIDSHandler:
             annotations_asset, ctx.derivatives_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
         )
         return AnnotationsFile(_id=file._id, name=file.name, author=author)
+
+    def update_annotation_status(self, annotations_file: AnnotationsFile) -> AnnotationsFile:
+        self.girder_client.put(
+            path=f"{self.resource.file}/{annotations_file._id}/metadata",
+            parameters={"metadata": json.dumps({"status": annotations_file.status.value})},
+        )
 
     def download_file(self, file: EEGFile, path: Path, refresh: bool = False) -> Asset:
         asset = self._load_asset_from_file(file)
