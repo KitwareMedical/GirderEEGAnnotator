@@ -26,7 +26,7 @@ class Button(VBtn):
             kwargs["icon"] = True
             kwargs["variant"] = kwargs.get("variant", "text")
         else:
-            kwargs["rounded"] = True
+            kwargs["rounded"] = kwargs.get("rounded", True)
             kwargs["color"] = color
             kwargs["flat"] = kwargs.get("flat", True)
 

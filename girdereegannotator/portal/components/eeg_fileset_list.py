@@ -26,13 +26,18 @@ class EEGFilesetListState:
 
 class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
     annotation_selected = Signal(EEGFileset, AnnotationsFile)
+    annotation_deleted = Signal(AnnotationsFile)
 
     def _count_annotation_per_status(self, annotation_status: AnnotationStatus) -> str:
         return f"{self.item}.annotations_files.filter(f => f.status === {annotation_status.value}).length"
 
     def _build_annotation_status_chip(self, annotation_status: AnnotationStatus, **kwargs) -> None:
         annotations_count = self._count_annotation_per_status(annotation_status)
-        v3.VChip(v_if=annotations_count, append_icon="mdi-tag", text=(annotations_count,), **kwargs)
+        v3.VChip(
+            v_if=annotations_count,
+            text=(annotations_count,),
+            **kwargs,
+        )
 
     def __init__(
         self, item_state: TypedState[EEGFileset], list_state: TypedState[EEGFilesetListState], **kwargs
@@ -40,9 +45,11 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         super().__init__(item_state=item_state, list_state=list_state, **kwargs)
 
         with self.action_slot:
-            self._build_annotation_status_chip(AnnotationStatus.IN_PROGRESS, color="warning")
-            self._build_annotation_status_chip(AnnotationStatus.IN_REVIEW, color="info")
-            self._build_annotation_status_chip(AnnotationStatus.DONE, color="success")
+            self._build_annotation_status_chip(
+                AnnotationStatus.IN_PROGRESS, color="warning", append_icon="mdi-tag-edit"
+            )
+            self._build_annotation_status_chip(AnnotationStatus.IN_REVIEW, color="info", append_icon="mdi-tag-arrow-up")
+            self._build_annotation_status_chip(AnnotationStatus.DONE, color="success", append_icon="mdi-tag-check")
 
             self.build_select_item_button(text="View", prepend_icon="mdi-eye-outline")
 
@@ -70,6 +77,12 @@ class EEGFilesetList(ExpandableList[EEGFilesetListState, EEGFileset]):
         eeg_fileset = self.item_state.get_dataclass()
         self.item_selected(eeg_fileset)
 
+    def delete_annotation(self, annotation_id: str) -> None:
+        eeg_fileset = self.item_state.get_dataclass()
+        annotation = next((ann for ann in eeg_fileset.annotations_files if ann._id == annotation_id), None)
+        self.annotation_deleted(annotation)
+
     def _connect_annotation_list(self, annotation_list: AnnotationList) -> None:
-        annotation_list.new_clicked.connect(self.create_new_annotation)
-        annotation_list.view_clicked.connect(self.select_annotations_file)
+        annotation_list.new_annotation_clicked.connect(self.create_new_annotation)
+        annotation_list.annotation_selected.connect(self.select_annotations_file)
+        annotation_list.delete_clicked.connect(self.delete_annotation)

@@ -57,12 +57,22 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
         self.load_task: Task | None = None
         self.save_task: Task | None = None
+        self.delete_task: Task | None = None
 
         self.current_user = TypedState(self.state, User)
         self.bind_changes({self.name.mode: self.rca_view.update_viewer_mode})
 
     def set_ui(self, ui: EEGViewerUI) -> None:
         self.view_handler = ui.rca.create_view_handler(self.rca_view)
+
+    def set_readonly_mode(self) -> None:
+        self.data.mode = RCAViewMode.READONLY
+
+    def set_edit_mode(self) -> None:
+        self.data.mode = RCAViewMode.EDIT
+
+    def unset_mode(self) -> None:
+        self.data.mode = RCAViewMode.UNDEFINED
 
     def _cleanup_current_tmpdir(self) -> None:
         if self._current_tmpdir is not None:
@@ -179,17 +189,34 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         except (RuntimeError, FileNotFoundError, DatabaseError) as e:
             raise EEGViewerError(f"Could not save annotations on {eeg_fileset.name}") from e
 
-    def save_annotations_file(self, eeg_fileset: EEGFileset) -> Task:
+    def _update_annotations_status(self, annotations_file: AnnotationsFile) -> None:
+        try:
+            self.ctrl.update_annotations_file_status(annotations_file)
+        except DatabaseError as e:
+            raise EEGViewerError(
+                f"Could not update {annotations_file.name} status to {annotations_file.status.value}"
+            ) from e
+
+    def save_annotations_file(
+        self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile, annotation_status: AnnotationStatus | None
+    ) -> Task:
         async def _save() -> tuple[EEGFileset, AnnotationsFile]:
             try:
                 refreshed_eeg_fileset: EEGFileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
-                annotations_file = await to_thread(self._save_annotations_file, refreshed_eeg_fileset)
+                if annotations_file.status == AnnotationStatus.IN_PROGRESS:
+                    updated_annotations_file = await to_thread(self._save_annotations_file, refreshed_eeg_fileset)
+                else:
+                    updated_annotations_file = annotations_file
 
-                updated_eeg_fileset = upsert_annotations_file(refreshed_eeg_fileset, annotations_file)
+                if annotation_status is not None:
+                    updated_annotations_file.status = annotation_status
+                    self._update_annotations_status(updated_annotations_file)
 
-                self._update_viewer_mode(updated_eeg_fileset, annotations_file)
+                updated_eeg_fileset = upsert_annotations_file(refreshed_eeg_fileset, updated_annotations_file)
 
-                return updated_eeg_fileset, annotations_file
+                self._update_viewer_mode(updated_eeg_fileset, updated_annotations_file)
+
+                return updated_eeg_fileset, updated_annotations_file
 
             except EEGViewerError as e:
                 raise e
@@ -198,3 +225,31 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
             self.save_task.cancel()
         self.save_task = self.create_async_task(_save)
         return self.save_task
+
+    def _delete_annotations_file(self, annotations_file: AnnotationsFile) -> None:
+        try:
+            self.ctrl.delete_annotations_file(annotations_file)
+        except DatabaseError as e:
+            raise EEGViewerError(f"Could not delete {annotations_file.name}") from e
+
+    def delete_annotations_file(self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile) -> Task:
+        async def _delete() -> tuple[EEGFileset, AnnotationsFile]:
+            try:
+                await to_thread(self._delete_annotations_file, annotations_file)
+                updated_eeg_fileset: EEGFileset = self.ctrl.refresh_eeg_fileset(eeg_fileset, compute_eeg=True)
+                updated_annotations_file = None
+
+                # Update viewer with new annotation
+                await to_thread(self._load_eeg_files, updated_eeg_fileset, updated_annotations_file, False)
+
+                self._update_viewer_mode(updated_eeg_fileset, None)
+
+                return updated_eeg_fileset, None
+
+            except EEGViewerError as e:
+                raise e
+
+        if self.delete_task and not self.delete_task.done():
+            self.delete_task.cancel()
+        self.delete_task = self.create_async_task(_delete)
+        return self.delete_task
