@@ -11,6 +11,9 @@ class AnnotationActions(html.Div):
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="annotation-actions", **kwargs)
 
+        with self:
+            v3.VDivider(vertical=True)
+
     def _build_button(self, **kwargs) -> None:
         Button(
             density="comfortable",
@@ -51,32 +54,29 @@ class AnnotateActions(AnnotationActions):
 class ReviewActions(AnnotationActions):
     annotation_approved = Signal()
     annotation_rejected = Signal()
+    annotation_unsubmitted = Signal()
 
-    def __init__(self, **kwargs):
+    def __init__(self, is_author: str, **kwargs):
         super().__init__(**kwargs)
 
         with self:
             self._build_button(
+                v_if=f"!{is_author}",
                 click=self.annotation_approved,
                 color="success",
                 icon="mdi-check",
                 tooltip="Approve annotations",
             )
             self._build_button(
+                v_if=f"!{is_author}",
                 click=self.annotation_rejected,
                 color="error",
                 icon="mdi-close",
                 tooltip="Reject annotation",
             )
-
-
-class ReadonlyAction(AnnotationActions):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        with self:
-            v3.VIcon(icon="mdi-lock", color="secondary", size="small")
-            html.Div("READ-ONLY")
-
-
-class NoAction(AnnotationActions): ...
+            self._build_button(
+                v_else=True,
+                click=self.annotation_unsubmitted,
+                icon="mdi-undo",
+                tooltip="Unsubmit annotation",
+            )

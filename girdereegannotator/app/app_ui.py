@@ -50,12 +50,13 @@ class AnnotatorAppUI:
 
             client.Style(
                 "html { overflow-y: hidden; } "
-                ".annotation-actions { width: 130px; height: 100%; display: flex; align-items: center; justify-content: space-around }"
-                ".annotation-input { width: 450px; height: 100%; display: flex; align-items: center; }"
+                ".annotation-actions { height: 100%; display: flex; align-items: center; justify-content: space-around }"
+                ".annotation-input { height: 100%; display: flex; align-items: center; flex-grow: 1 }"
                 ".annotation-input__menu .v-field { background-color: inherit; }"
                 ".annotation-input__menu .v-field__input:has(.v-select__selection) { padding: 0; }"
                 ".annotation-input__menu { height: 100%; display: flex; flex-grow: 1; }"
                 ".annotation-list .annotation-list-item:hover { background-color: color-mix(in srgb, rgb(var(--v-theme-surface)) 95%, rgb(var(--v-theme-primary))); }"
+                ".annotation-tool { height: 100%; display: flex; align-items: center; width: 600px; }"
                 ".annotator { height: 100%; }"
                 ".annotator-tool { height: 100%; display: flex; flex-direction: column; }"
                 ".annotator-tool__content { height: 40px; padding-left: 8px; padding-right: 8px; display: flex; align-items: center; border-radius: 24px; background-color: rgb(var(--v-theme-surface-variant)); }"
@@ -91,6 +92,7 @@ class AnnotatorAppUI:
                 ".nav-bar { height: 65px; }"
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
+                ".nav-window-group { height: 100%; overflow: unset; }"
                 ".portal { padding-left: 20px; padding-right: 20px; padding-bottom: 10px; height: 100%;}"
                 ".portal-toolbar { display: flex; flex-grow: 1; align-items: center; justify-content: end; height: 100%; }"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
@@ -109,6 +111,7 @@ class AnnotatorAppUI:
                 ".viewer__content { height: calc(100% - 5px); }"
                 ".viewer__error { height: calc(100% - 5px); }"
                 ".viewer__load { height: 5px; }"
+                ".viewer-status { padding: 6px; width: 36px; height: 36px; }"
             )
             with self.bar:
                 self.auth_ui = AuthenticationUI()

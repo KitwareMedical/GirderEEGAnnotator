@@ -64,14 +64,8 @@ class EGGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
             ):
                 mode = EEGAnnotatorMode.ANNOTATE
 
-            elif (
-                self.annotations_file.status == AnnotationStatus.IN_REVIEW
-                and self.annotations_file.author._id != self._user_state.data._id
-            ):
+            elif self.annotations_file.status == AnnotationStatus.IN_REVIEW:
                 mode = EEGAnnotatorMode.REVIEW
-
-            else:
-                mode = EEGAnnotatorMode.READONLY
 
         self.data.mode = mode
 

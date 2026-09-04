@@ -3,12 +3,14 @@ from enum import Enum, auto
 
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
+from trame_server.utils.typed_state import TypedState
 from undo_stack import Signal
 
 from girdereegannotator.database.models import (
     AnnotationsFile,
     AnnotationStatus,
     EEGFileset,
+    User,
 )
 from girdereegannotator.portal.components.eeg_annotation_list import (
     AnnotationDeleteDialog,
@@ -19,17 +21,15 @@ from .components import (
     AnnotateActions,
     AnnotationInput,
     FilesetInput,
-    NoAction,
-    ReadonlyAction,
     ReviewActions,
     ShortcutsPanel,
+    ViewerStatus,
 )
 from .eeg_viewer_ui import EEGViewerUI
 
 
 class EEGAnnotatorMode(Enum):
     UNDEFINED = auto()
-    READONLY = auto()
     ANNOTATE = auto()
     REVIEW = auto()
     DONE = auto()
@@ -53,6 +53,7 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     def __init__(self, **kwargs) -> None:
         super().__init__(classes="annotator", **kwargs)
         self._init_typed_state(self.state, EEGAnnotatorState)
+        self._user_state = TypedState(self.state, User)
 
         with self:
             self.viewer_ui = EEGViewerUI()
@@ -75,31 +76,34 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
 
         with html.Div(classes="annotator-tool"):
             html.Label("Annotations", classes="annotator-tool__label")
-            with html.Div(classes="annotator-tool__content"), html.Div(classes="d-flex align-center fill-height"):
+            with html.Div(classes="annotator-tool__content"), html.Div(classes="annotation-tool"):
                 annotation_input = AnnotationInput(
                     annotations_file_state=self.get_sub_state(self.name.annotations_file),
                     eeg_fileset_state=self.get_sub_state(self.name.eeg_fileset),
                     eeg_fileset_validated=self._is_annotator_mode(EEGAnnotatorMode.DONE),
                 )
                 self._connect_annotation_input(annotation_input)
-                v3.VDivider(vertical=True)
+
                 annotate_actions = AnnotateActions(
                     v_if=self._is_annotator_mode(EEGAnnotatorMode.ANNOTATE),
                     annotation_name=self.name.annotations_file.name,
                     annotation_id=self.name.annotations_file._id,
                 )
-                review_actions = ReviewActions(v_else_if=self._is_annotator_mode(EEGAnnotatorMode.REVIEW))
-                ReadonlyAction(
-                    v_else_if=f"{self._is_annotator_mode(EEGAnnotatorMode.READONLY)} || {self._is_annotator_mode(EEGAnnotatorMode.DONE)}"
+                review_actions = ReviewActions(
+                    v_else_if=f"{self._is_annotator_mode(EEGAnnotatorMode.REVIEW)}",
+                    is_author=self._is_author(),
                 )
-                NoAction(v_else=True)
 
                 self._connect_annotate_actions(annotate_actions)
                 self._connect_review_actions(review_actions)
 
         v3.VSpacer()
-
+        ViewerStatus(is_readonly=self.viewer_ui.is_readonly)
+        v3.VSpacer()
         ShortcutsPanel()
+
+    def _is_author(self) -> str:
+        return f"({self.name.annotations_file.author._id} === {self._user_state.name._id})"
 
     def _is_annotator_mode(self, annotator_mode: EEGAnnotatorMode) -> str:
         return f"({self.name.mode} === {annotator_mode.value})"
@@ -121,3 +125,6 @@ class EGGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
     def _connect_review_actions(self, review_actions: ReviewActions) -> None:
         review_actions.annotation_approved.connect(lambda: self.annotation_status_changed(AnnotationStatus.DONE))
         review_actions.annotation_rejected.connect(lambda: self.annotation_status_changed(AnnotationStatus.IN_PROGRESS))
+        review_actions.annotation_unsubmitted.connect(
+            lambda: self.annotation_status_changed(AnnotationStatus.IN_PROGRESS)
+        )

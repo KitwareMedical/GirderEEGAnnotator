@@ -66,13 +66,18 @@ class AnnotationInput(html.Div):
         **kwargs,
     ) -> None:
         super().__init__(classes="annotation-input", **kwargs)
+        self._annotations_file_state = annotations_file_state
 
         with self:
+            with html.Div(v_if=eeg_fileset_validated, classes="px-2"):
+                v3.VTooltip("EEG validated", activator="parent", location="left")
+                v3.VIcon(icon="mdi-check-circle", color="success", size="small")
+
             Button(
-                click=self.annotation_selected,
+                v_else=True,
+                click=self._new_annotation_clicked,
                 color="secondary",
                 density="comfortable",
-                disabled=(f"!{annotations_file_state.name._id} || {eeg_fileset_validated}",),
                 icon="mdi-plus",
                 tooltip_location="bottom start",
                 tooltip="New annotation",
@@ -83,3 +88,8 @@ class AnnotationInput(html.Div):
             with html.Div(classes="annotation-input__menu"):
                 annotation_menu = AnnotationMenu(annotations_file_state, eeg_fileset_state, eeg_fileset_validated)
                 annotation_menu.annotation_selected.connect(self.annotation_selected)
+
+    def _new_annotation_clicked(self) -> None:
+        if self._annotations_file_state.data._id is None:
+            return
+        self.annotation_selected()
