@@ -3,7 +3,7 @@ from inspect import getmembers, isfunction
 
 from trame_server.controller import Controller
 
-from .models import AnnotationsFile, Asset, Dataset, EEGFileset, User
+from .models import AnnotationsFile, AnnotationStatus, Asset, Dataset, EEGFileset, User
 
 
 class DatabaseInterface(ABC):
@@ -46,7 +46,9 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
+    def set_annotations_file_status(
+        self, annotations_file: AnnotationsFile, annotations_status: AnnotationStatus
+    ) -> AnnotationsFile:
         pass
 
     @abstractmethod

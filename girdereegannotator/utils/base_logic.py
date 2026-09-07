@@ -6,7 +6,7 @@ from trame_server import Server
 from trame_server.state import State
 from trame_server.utils.typed_state import TypedState
 
-from girdereegannotator.utils.async_state_context import (
+from .async_state_context import (
     AsyncStateContext,
     create_async_task,
 )

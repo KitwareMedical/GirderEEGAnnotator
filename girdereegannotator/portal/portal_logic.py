@@ -1,4 +1,5 @@
 from asyncio import Task, to_thread
+from sqlite3 import DatabaseError
 
 from trame_server import Server
 from trame_server.utils.typed_state import TypedState
@@ -220,9 +221,15 @@ class PortalLogic(BaseLogic[PortalState]):
             return
 
         async def _delete() -> None:
-            await to_thread(self.ctrl.delete_annotations_file, annotations_file)
-            updated_fileset = await to_thread(self.ctrl.refresh_eeg_fileset, self.eeg_fileset)
-            self.update_eeg_fileset_in_list(updated_fileset)
+            try:
+                await to_thread(self.ctrl.delete_annotations_file, annotations_file)
+                updated_fileset = await to_thread(self.ctrl.refresh_eeg_fileset, self.eeg_fileset)
+                self.update_eeg_fileset_in_list(updated_fileset)
+                self.ctrl.create_success_alert(f"{annotations_file.name} deleted successfully")
+            except DatabaseError as e:
+                msg = f"Could not delete {annotations_file.name}"
+                self.ctrl.create_error_alert(msg)
+                raise e
 
         self.create_async_task(_delete)
 

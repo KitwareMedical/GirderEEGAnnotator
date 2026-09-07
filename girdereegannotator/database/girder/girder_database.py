@@ -12,6 +12,7 @@ from ..exceptions import AuthenticationError
 from ..interface_database import DatabaseInterface
 from ..models import (
     AnnotationsFile,
+    AnnotationStatus,
     Asset,
     DatabaseError,
     Dataset,
@@ -123,19 +124,13 @@ class GirderDatabase(DatabaseInterface):
         try:
             return self.bids_handler.list_eeg_filesets(dataset, **kwargs)
         except GirderHTTPError as e:
-            if e.status == 403:
-                msg = "Access denied"
-            elif e.status == 401:
-                msg = "Unauthorized"
-            else:
-                msg = "Invalid request"
-            raise DatabaseError(f"Could not list EEGs: {msg}") from e
+            raise DatabaseError(f"Could not list EEG for {dataset.name}: {handle_database_error(e)}") from e
 
     def refresh_eeg_fileset(self, eeg_fileset: EEGFileset, compute_eeg: bool = False) -> EEGFileset:
         try:
             return self.bids_handler.get_eeg_fileset(eeg_fileset, compute=compute_eeg)
         except GirderHTTPError as e:
-            raise DatabaseError(f"Could not refresg EEG {eeg_fileset.name}: {handle_database_error(e)}") from e
+            raise DatabaseError(f"Could not refresh EEG {eeg_fileset.name}: {handle_database_error(e)}") from e
 
     def _download_file(self, file: EEGFile, download_dir: str, refresh: bool = False) -> Asset:
         try:
@@ -178,9 +173,11 @@ class GirderDatabase(DatabaseInterface):
                 f"Could not upload annotations file {annotations_asset.name} to {eeg_fileset.name}: {handle_database_error(e)}"
             ) from e
 
-    def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
+    def set_annotations_file_status(
+        self, annotations_file: AnnotationsFile, annotations_status: AnnotationStatus
+    ) -> AnnotationsFile:
         try:
-            self.bids_handler.update_annotation_status(annotations_file)
+            return self.bids_handler.set_annotation_status(annotations_file, annotations_status)
         except GirderHTTPError as e:
             raise DatabaseError(
                 f"Could not update annotations file ({annotations_file.name}) status to {annotations_file.status.value}: {handle_database_error(e)}"

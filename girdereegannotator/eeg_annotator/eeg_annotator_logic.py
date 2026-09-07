@@ -13,7 +13,7 @@ from girdereegannotator.database.models import (
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from .eeg_annotator_ui import EEGAnnotatorMode, EEGAnnotatorState, EEGAnnotatorUI
-from .eeg_viewer_logic import EEGViewerLogic
+from .eeg_viewer_logic import EEGViewerError, EEGViewerLogic
 
 
 class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
@@ -70,7 +70,11 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         self.data.mode = mode
 
     def _on_task_finished(self, task: Task) -> None:
-        eeg_fileset, annotations_file = task.result()
+        try:
+            eeg_fileset, annotations_file = task.result()
+        except EEGViewerError:
+            return
+
         self.eeg_fileset = eeg_fileset
         self.annotations_file = annotations_file if annotations_file is not None else AnnotationsFile()
         self._refresh_annotator_mode()
@@ -89,7 +93,7 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         load_task = self._viewer_logic.load_eeg_files(eeg_fileset, annotations_file, is_new_eeg_fileset)
         load_task.add_done_callback(self._on_task_finished)
 
-    def _save_annotations_file(self, annotation_status: AnnotationStatus | None = None) -> None:
+    def _save_annotations_file(self, annotation_status: AnnotationStatus = AnnotationStatus.IN_PROGRESS) -> None:
         save_task = self._viewer_logic.save_annotations_file(self.eeg_fileset, self.annotations_file, annotation_status)
         save_task.add_done_callback(self._on_task_finished)
 

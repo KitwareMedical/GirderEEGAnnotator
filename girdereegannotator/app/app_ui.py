@@ -7,6 +7,7 @@ from trame_server.core import Server
 
 from girdereegannotator.utils.base_ui import BaseUI
 
+from ..alerts import AlertsUI
 from ..authentication import AuthenticationUI
 from ..eeg_annotator import EEGAnnotatorUI
 from ..portal import PortalUI
@@ -101,6 +102,8 @@ class AnnotatorAppUI:
                 ".status-button .v-btn__content { display: flex; flex-direction: column; gap: 4px;}"
                 ".status-button { background-color: rgb(var(--v-theme-surface-variant)); color: rgb(var(--v-theme-on-surface-variant))}"
                 ".text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+                ".alerts-stack { position: fixed; bottom: 16px; right: 16px; pointer-events: none; }"
+                ".alerts-stack :deep(.v-alert) { pointer-events: auto; }"
                 ".v-input .v-input__prepend .v-icon { color: rgb(var(--v-theme-on-surface)); opacity: 1; }"
                 ".v-input .annotation-list-item { padding: 0px; min-height: 0px; }"
                 ".v-input .annotation-list-item .v-list-item-title { font-size: 0.8rem; }"
@@ -112,6 +115,7 @@ class AnnotatorAppUI:
                 ".viewer__error { height: calc(100% - 5px); }"
                 ".viewer__load { height: 5px; }"
                 ".viewer-status { padding: 6px; width: 36px; height: 36px; }"
+                ".alerts-container { position: fixed; bottom: 0; right: 0; width: 100%; max-width: 40em; display: grid; grid-gap: 0.5em; z-index: 999; padding: 0.5em; }"
             )
             with self.bar:
                 self.auth_ui = AuthenticationUI()
@@ -130,6 +134,8 @@ class AnnotatorAppUI:
 
             with self.navigation.annotator_toolbar:
                 self.eeg_annotator_ui.build_toolbar()
+
+            self.alert_ui = AlertsUI()
 
     @property
     def bar(self) -> html.Div:

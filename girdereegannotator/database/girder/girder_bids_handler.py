@@ -163,7 +163,7 @@ class GirderBIDSHandler:
                 _id=annotations_file["_id"],
                 name=annotations_file["name"],
                 author=self._get_user_from_id(annotations_file["creatorId"]),
-                status=AnnotationStatus(annotations_file["bids_metadata"].get("status", AnnotationStatus.IN_PROGRESS)),
+                status=AnnotationStatus(annotations_file["bids_metadata"].get("status", AnnotationStatus.UNDEFINED)),
             )
             for annotations_file in eeg_annotations_files
         ]
@@ -180,10 +180,18 @@ class GirderBIDSHandler:
         )
         return AnnotationsFile(_id=file._id, name=file.name, author=author)
 
-    def update_annotation_status(self, annotations_file: AnnotationsFile) -> AnnotationsFile:
-        self.girder_client.put(
+    def set_annotation_status(
+        self, annotations_file: AnnotationsFile, annotation_status: AnnotationStatus
+    ) -> AnnotationsFile:
+        file = self.girder_client.put(
             path=f"{self.resource.file}/{annotations_file._id}/metadata",
-            parameters={"metadata": json.dumps({"status": annotations_file.status.value})},
+            parameters={"metadata": json.dumps({"status": annotation_status.value})},
+        )
+        return AnnotationsFile(
+            _id=file["_id"],
+            name=file["name"],
+            author=self._get_user_from_id(file["creatorId"]),
+            status=AnnotationStatus(file["bids_metadata"].get("status")),
         )
 
     def download_file(self, file: EEGFile, path: Path, refresh: bool = False) -> Asset:

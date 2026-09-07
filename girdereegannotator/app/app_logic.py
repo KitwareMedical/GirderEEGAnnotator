@@ -1,5 +1,6 @@
 from trame_server.core import Server
 
+from girdereegannotator.alerts.alerts_logic import AlertsLogic
 from girdereegannotator.database.models import AnnotationsFile, EEGFileset
 from girdereegannotator.utils.base_logic import BaseLogic
 
@@ -14,6 +15,7 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
     def __init__(self, server: Server):
         super().__init__(server, AnnotatorAppState)
 
+        self._alerts_logic = AlertsLogic(self.server)
         self._portal_logic = PortalLogic(self.server)
         self._eeg_annotator_logic = EEGAnnotatorLogic(self.server)
         self._auth_logic = AuthenticationLogic(server)

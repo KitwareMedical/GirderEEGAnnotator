@@ -67,7 +67,7 @@ class AnnotationListItemMenu(AnnotationListItemElement):
                     color="error",
                     click=(self.delete_clicked, f"[{self.annotation}]"),
                     disabled=(
-                        f"!{self._is_annotation_author()} || {self._is_annotation_status(AnnotationStatus.DONE)}",
+                        f"!({self._is_annotation_author()} && {self._is_annotation_status(AnnotationStatus.IN_PROGRESS)})",
                     ),
                     text="Delete",
                     rounded=False,
