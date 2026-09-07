@@ -11,10 +11,11 @@ dependencies = [
     "mne",
     "py-undo-stack",
     "scipy",
-    "trame-rca>=2.1",
-    "trame-server",
-    "trame-vuetify",
-    "trame>=3.8.0"
+    "trame-alerts",
+    "trame-rca>=2.11",
+    "trame-server==4.0.0",
+    "trame-vuetify==3.2.6",
+    "trame==4.0.0"
 ]
 requires-python = ">=3.11, <3.13"
 readme = "README.md"
