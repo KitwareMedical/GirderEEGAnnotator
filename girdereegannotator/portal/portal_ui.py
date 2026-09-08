@@ -18,7 +18,6 @@ from .components.filters.search_filter import SearchState
 
 @dataclass
 class PortalState:
-    me: str | None = None
     current_breadcrumbs_element: BreadcrumbsElement = BreadcrumbsElement.ROOT
     current_dataset: Dataset = field(default_factory=Dataset)
     current_eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
@@ -54,7 +53,6 @@ class PortalUI(html.Div, BaseUI[PortalState]):
                     filter_state=self.get_sub_state(self.name.eeg_fileset_filter_state)
                 )
                 self.eeg_fileset_list = EEGFilesetList(
-                    user_id=self.name.me,
                     item_state=self.get_sub_state(self.name.current_eeg_fileset),
                     list_state=self.get_sub_state(self.name.eeg_fileset_list_state),
                 )

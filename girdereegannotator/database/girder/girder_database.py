@@ -81,8 +81,8 @@ class GirderDatabase(DatabaseInterface):
         return model(**self._clean_doc(doc, model))
 
     def _user_as_dataclass(self, user: GirderModel) -> User:
-        user["first_name"] = user["firstName"]
-        user["last_name"] = user["lastName"]
+        user["name"] = " ".join([str(user["firstName"]).capitalize(), str(user["lastName"]).upper()])
+        user["short_name"] = str(user["firstName"])[0].upper() + str(user["lastName"])[0].upper()
         return self._document_as_dataclass(user, User)
 
     def logout(self) -> None:
@@ -170,7 +170,7 @@ class GirderDatabase(DatabaseInterface):
     def upload_annotations_file(self, eeg_fileset: EEGFileset, annotations_asset: Asset) -> AnnotationsFile:
         try:
             user = self.get_me()
-            return self.bids_handler.upload_annotations_file(eeg_fileset, annotations_asset, user._id)
+            return self.bids_handler.upload_annotations_file(eeg_fileset, annotations_asset, user)
         except GirderHTTPError as e:
             raise DatabaseError(
                 f"Could not upload annotations file {annotations_asset.name} to {eeg_fileset.name}: {handle_database_error(e)}"
