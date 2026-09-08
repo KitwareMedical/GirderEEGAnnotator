@@ -158,6 +158,8 @@ class GirderDatabase(DatabaseInterface):
         if annotations_file is None:
             annotations_asset_name = self.bids_handler.get_next_annotations_file_name(eeg_fileset)
             annotations_asset_path = Path(download_dir) / annotations_asset_name
+            if annotations_asset_path.exists():
+                annotations_asset_path.unlink()
             annotations_asset_path.touch()
             annotations_asset = Asset(annotations_asset_name, str(annotations_asset_path))
 
@@ -174,4 +176,20 @@ class GirderDatabase(DatabaseInterface):
         except GirderHTTPError as e:
             raise DatabaseError(
                 f"Could not upload annotations file {annotations_asset.name} to {eeg_fileset.name}: {handle_database_error(e)}"
+            ) from e
+
+    def update_annotations_file_status(self, annotations_file: AnnotationsFile) -> None:
+        try:
+            self.bids_handler.update_annotation_status(annotations_file)
+        except GirderHTTPError as e:
+            raise DatabaseError(
+                f"Could not update annotations file ({annotations_file.name}) status to {annotations_file.status.value}: {handle_database_error(e)}"
+            ) from e
+
+    def delete_annotations_file(self, annotations_file: AnnotationsFile) -> None:
+        try:
+            self.girder_client.delete(f"item/{annotations_file._id}")
+        except GirderHTTPError as e:
+            raise DatabaseError(
+                f"Could not delete annotations file ({annotations_file.name}): {handle_database_error(e)}"
             ) from e

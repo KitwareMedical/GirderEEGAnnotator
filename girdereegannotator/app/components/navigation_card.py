@@ -41,7 +41,7 @@ class NavigationCard(v3.VCard):
 
             with (
                 v3.VCardText(classes="nav-content"),
-                v3.VWindow(v_model=(nav_state.name.window,), classes="fill-height", style="overflow: unset;"),
+                v3.VWindow(v_model=(nav_state.name.window,), classes="nav-window-group"),
             ):
                 self.portal = v3.VWindowItem(classes="nav-window", value=(NavigationWindow.PORTAL.value,))
                 self.annotator = v3.VWindowItem(

@@ -59,4 +59,8 @@ class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
                 )
 
     def _is_load_status(self, load_status: LoadStatus) -> str:
-        return f"({self.name.load_status} == {load_status.value})"
+        return f"({self.name.load_status} === {load_status.value})"
+
+    @property
+    def is_readonly(self) -> str:
+        return f"({self.name.mode} === {RCAViewMode.READONLY.value})"
