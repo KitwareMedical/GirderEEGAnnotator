@@ -6,12 +6,11 @@ authors = [
     {name = "Kitware Europe"},
 ]
 dependencies = [
-    "eegvizlib>=0.2.0rc3",
+    "eegvizlib>=0.2.0",
     "girder-client",
     "mne",
     "py-undo-stack",
     "scipy",
-    "trame-gwc",
     "trame-rca>=2.1",
     "trame-server",
     "trame-vuetify",
@@ -42,7 +41,7 @@ turbo = [
 ]
 
 [project.scripts]
-girdereegannotator = "girdereegannotator:main"
+girdereegannotator-cli = "girdereegannotator:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -55,9 +54,6 @@ allow-direct-references = true
 packages = ["girdereegannotator"]
 
 [tool.semantic_release]
-version_variables = [
-    "girdereegannotator/__init__.py:__version__",
-]
 version_toml = [
     "pyproject.toml:project.version",
 ]
