@@ -2,6 +2,23 @@
 
 <!-- version list -->
 
+## v1.12.0 (2026-09-08)
+
+### Features
+
+- **annotation selector**: Add annotations file selector in viewer
+  ([`00a421a`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/00a421a1449528685e89c8352bdedd97f785d09e))
+
+- **annotation status**: Add annotation count per status on EEG filesets
+  ([`fb120e7`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/fb120e726f54c78c2f327c6058c867c4a3338cb7))
+
+- **async save**: Make save annotations asynchronous
+  ([`5ca0fe5`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5ca0fe5c330c7e5d8ecb8cd5ccaabd9eb033a7e3))
+
+- **viewer mode**: Add modes to control the available actions in the
+  ([`d85a8c4`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/d85a8c43831417fa6fbaa84821eec9671e4e2235))
+
+
 ## v1.11.0 (2026-09-08)
 
 ### Chores
