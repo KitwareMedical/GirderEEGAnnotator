@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-09-08)
+
+### Chores
+
+- **viewer layout**: Move toolbar to nav toolbar and shortcuts to app bar
+  ([`0971596`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/097159637bd32e4cc6f8d34767f0e748d7e0c2b7))
+
+### Features
+
+- **annotation selector**: Add annotations file selector in viewer
+  ([`49c4bd2`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/49c4bd263ba2754c3f0e34c190c2663ac97e3852))
+
+- **author tag**: Add annotations file author name in list
+  ([`c5ea29c`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/c5ea29c21f0f6db309ecd67edd0dc4104b0d708c))
+
+
 ## v1.10.0 (2026-09-08)
 
 ### Chores
