@@ -75,7 +75,7 @@ class AnnotationListItem(v3.VListItem):
     delete_clicked = Signal(str)
 
     def __init__(self, annotation: str, build_actions: bool, **kwargs) -> None:
-        super().__init__(classes="annotation-list-item", title=(f"{annotation}.name",), subtitle="aaaaa", **kwargs)
+        super().__init__(classes="annotation-list-item", title=(f"{annotation}.name",), **kwargs)
         with self:
             if build_actions:
                 with v3.Template(v_slot_append=True):

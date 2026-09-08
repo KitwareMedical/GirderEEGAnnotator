@@ -1,4 +1,5 @@
 import shutil
+from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,12 @@ import numpy as np
 from PIL import Image
 
 from girdereegannotator.database.models import Asset
+
+
+class RCAViewMode(Enum):
+    UNDEFINED = auto()
+    READONLY = auto()
+    EDIT = auto()
 
 
 class RCAViewError(Exception): ...
@@ -19,6 +26,14 @@ class RCAView:
         self._cols, self._rows = 0, 0
         self.window_size = {"w": 0, "h": 0}
         self.tmp_annotations_asset = Asset(name="tmp_annotations_file.tsv")
+
+    def update_viewer_mode(self, mode: RCAViewMode) -> None:
+        if mode == RCAViewMode.UNDEFINED:
+            self._events = []
+        elif mode == RCAViewMode.READONLY:
+            self._events = ["MouseMove", "KeyDown"]
+        else:
+            self._events = ["MouseMove", "LeftButtonPress", "RightButtonPress", "KeyDown"]
 
     def save_annotations_asset(self, annotations_asset_path: str) -> None:
         if not Path(self.tmp_annotations_asset.path).exists():

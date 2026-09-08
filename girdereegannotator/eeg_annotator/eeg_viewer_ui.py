@@ -11,6 +11,8 @@ from girdereegannotator.utils.load_status import (
     LoadStatus,
 )
 
+from .components.rca_view import RCAViewMode
+
 
 @dataclass
 class EEGViewerState:
@@ -18,6 +20,7 @@ class EEGViewerState:
     status_message: str | None = None
     eeg_asset: Asset = field(default_factory=Asset)
     annotations_asset: Asset = field(default_factory=Asset)
+    mode: RCAViewMode = RCAViewMode.UNDEFINED
 
 
 class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
@@ -28,16 +31,16 @@ class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
         self._init_typed_state(self.state, EEGViewerState)
 
         with self, v3.VFadeTransition(mode="out-in"):
-            with html.Div(v_if=self.is_load_status(LoadStatus.LOADING), classes="viewer__load"):
+            with html.Div(v_if=self._is_load_status(LoadStatus.LOADING), classes="viewer__load"):
                 LoadProgress()
 
             with html.Div(
-                v_else_if=f"{self.is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
+                v_else_if=f"{self._is_load_status(LoadStatus.ERROR)} && {self.name.status_message} != null",
             ):
                 LoadErrorMessage(status_message=self.name.status_message)
 
             with (
-                html.Div(v_else_if=self.is_load_status(LoadStatus.LOADED), classes="viewer__content"),
+                html.Div(v_else_if=self._is_load_status(LoadStatus.LOADED), classes="viewer__content"),
                 v3.VHover(
                     v_slot="{ props }",
                     update_modelValue=(
@@ -55,5 +58,5 @@ class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):
                     send_mouse_move=True,
                 )
 
-    def is_load_status(self, load_status: LoadStatus) -> str:
+    def _is_load_status(self, load_status: LoadStatus) -> str:
         return f"({self.name.load_status} == {load_status.value})"
