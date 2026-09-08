@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 from trame_server import Server
 from trame_server.utils.typed_state import TypedState
 
-from girdereegannotator.database.models import Model
+from girdereegannotator.database.models import DatabaseError, Model
 from girdereegannotator.portal.components.expandable_list import ExpandableListState
 from girdereegannotator.utils.base_logic import BaseLogic
 from girdereegannotator.utils.load_status import LoadStatus
@@ -67,7 +67,7 @@ class ListLogic(BaseLogic[ExpandableListState[V]], Generic[V]):
 
             except asyncio.CancelledError:
                 pass
-            except Exception as e:
+            except DatabaseError as e:
                 self.data.load_status = LoadStatus.ERROR
                 self.data.status_message = str(e)
 

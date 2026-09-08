@@ -3,7 +3,7 @@ from inspect import getmembers, isfunction
 
 from trame_server.controller import Controller
 
-from .models import AnnotationFile, Asset, Dataset, EEGFileset, User
+from .models import AnnotationsFile, Asset, Dataset, EEGFileset, User
 
 
 class DatabaseInterface(ABC):
@@ -37,12 +37,12 @@ class DatabaseInterface(ABC):
         dataset: Dataset,
         eeg_fileset: EEGFileset,
         download_dir: str,
-        annotation_file: AnnotationFile | None = None,
+        annotations_file: AnnotationsFile | None = None,
     ) -> tuple[Asset, Asset]:
         pass
 
     @abstractmethod
-    def save_annotations(self, eeg_fileset: EEGFileset, eeg_annotation_file: AnnotationFile) -> AnnotationFile:
+    def upload_annotations_file(self, eeg_fileset: EEGFileset, eeg_annotations_asset: Asset) -> AnnotationsFile:
         pass
 
 

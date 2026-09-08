@@ -11,6 +11,7 @@ class Button(VBtn):
         text_transform: str | tuple[Any] | None = None,
         tooltip: str | tuple[Any] | None = None,
         tooltip_location: str = "right",
+        tooltip_open_delay: int = 500,
         **kwargs,
     ) -> None:
         icon = kwargs.pop("icon", None)
@@ -49,6 +50,6 @@ class Button(VBtn):
                     activator="parent",
                     close_delay=100,
                     location=tooltip_location,
-                    open_delay=500,
+                    open_delay=tooltip_open_delay,
                     text=tooltip,
                 )

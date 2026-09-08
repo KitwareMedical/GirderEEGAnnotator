@@ -9,7 +9,7 @@ from girder_client import GirderClient
 from girdereegannotator.utils.eeg import filter_eeg
 
 from ..models import (
-    AnnotationFile,
+    AnnotationsFile,
     Asset,
     Dataset,
     EEGFile,
@@ -132,9 +132,9 @@ class GirderBIDSHandler:
 
         return EEGFile(_id=filtered_eeg_file["_id"], name=filtered_eeg_file["name"])
 
-    def _find_annotation_files(
+    def _find_annotations_files(
         self, eeg_fileset: EEGFileset | EEGFilesetIdentifier, eeg_id: str
-    ) -> list[AnnotationFile]:
+    ) -> list[AnnotationsFile]:
         ctx = self.context.get_fileset(eeg_fileset._id)
         eeg_annotations_files = self.girder_client.get(
             self.resource.file,
@@ -148,21 +148,23 @@ class GirderBIDSHandler:
         )
 
         return [
-            AnnotationFile(
-                _id=annotation_file["_id"], name=annotation_file["name"], annotator_id=annotation_file["creatorId"]
+            AnnotationsFile(
+                _id=annotations_file["_id"], name=annotations_file["name"], annotator_id=annotations_file["creatorId"]
             )
-            for annotation_file in eeg_annotations_files
+            for annotations_file in eeg_annotations_files
         ]
 
-    def get_next_annotation_file_name(self, eeg_fileset: EEGFileset) -> str:
-        return self.naming.get_next_annotation_file_name(eeg_fileset)
+    def get_next_annotations_file_name(self, eeg_fileset: EEGFileset) -> str:
+        return self.naming.get_next_annotations_file_name(eeg_fileset)
 
-    def upload_annotation(self, eeg_fileset: EEGFileset, annotation: Asset, annotator_id: str) -> AnnotationFile:
+    def upload_annotations_file(
+        self, eeg_fileset: EEGFileset, annotations_asset: Asset, annotator_id: str
+    ) -> AnnotationsFile:
         ctx = self.context.get_fileset(eeg_fileset._id)
         file = self._upload_file(
-            annotation, ctx.derivatives_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
+            annotations_asset, ctx.derivatives_folder_id, source_id=eeg_fileset.eeg._id, reuse_existing=True
         )
-        return AnnotationFile(_id=file._id, name=file.name, annotator_id=annotator_id)
+        return AnnotationsFile(_id=file._id, name=file.name, annotator_id=annotator_id)
 
     def download_file(self, file: EEGFile, path: Path, refresh: bool = False) -> Asset:
         asset = self._load_asset_from_file(file)
@@ -192,7 +194,7 @@ class GirderBIDSHandler:
             kwargs.update(
                 {
                     "eeg": filtered_eeg_file,
-                    "annotations": self._find_annotation_files(eeg_fileset, filtered_eeg_file._id),
+                    "annotations_files": self._find_annotations_files(eeg_fileset, filtered_eeg_file._id),
                 }
             )
 

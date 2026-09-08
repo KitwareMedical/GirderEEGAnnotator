@@ -25,12 +25,14 @@ class BIDSNamingStrategy:
         base_name = self.extract_base_name(original_filename)
         return f"{base_name}_desc-filtered{self.suffix.eeg}{self.ext.eeg}"
 
-    def get_next_annotation_file_name(self, eeg_fileset: EEGFileset) -> str:
+    def get_next_annotations_file_name(self, eeg_fileset: EEGFileset) -> str:
         """Return the annotation filename using the smallest available number."""
         pattern = re.compile(r"_desc-annotation(\d+)_")
 
         used_numbers = {
-            int(match.group(1)) for annotation in eeg_fileset.annotations if (match := pattern.search(annotation.name))
+            int(match.group(1))
+            for annotation in eeg_fileset.annotations_files
+            if (match := pattern.search(annotation.name))
         }
 
         next_number = 1
@@ -38,8 +40,8 @@ class BIDSNamingStrategy:
             next_number += 1
 
         base_name = self.extract_base_name(eeg_fileset.name)
-        annotation_desc = f"desc-annotation{next_number}"
-        return f"{base_name}_{annotation_desc}{self.suffix.annotation}{self.ext.annotation}"
+        annotations_desc = f"desc-annotation{next_number}"
+        return f"{base_name}_{annotations_desc}{self.suffix.annotation}{self.ext.annotation}"
 
 
 class BIDSContextManager:

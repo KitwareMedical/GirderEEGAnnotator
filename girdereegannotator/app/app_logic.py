@@ -1,6 +1,6 @@
 from trame_server.core import Server
 
-from girdereegannotator.database.models import EEGFileset, User
+from girdereegannotator.database.models import AnnotationsFile, EEGFileset, User
 from girdereegannotator.utils.base_logic import BaseLogic
 
 from ..authentication import AuthenticationLogic
@@ -48,8 +48,10 @@ class AnnotatorAppLogic(BaseLogic[AnnotatorAppState]):
         self._eeg_annotator_logic.reset_state()
         self.data.nav_state.window = NavigationWindow.UNDEFINED
 
-    def _on_eeg_fileset_selected(self, eeg_fileset: EEGFileset) -> None:
-        self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset)
+    def _on_eeg_fileset_selected(
+        self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None = None
+    ) -> None:
+        self._eeg_annotator_logic.load_eeg_fileset(eeg_fileset, annotations_file)
         self.data.nav_state.window = NavigationWindow.ANNOTATOR
 
     def _on_eeg_fileset_unselected(self) -> None:
