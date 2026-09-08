@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-09-08)
+
+### Chores
+
+- Take comments into account
+  ([`89c470f`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/89c470f3888024627a17bbb93feb5498ba872553))
+
+### Features
+
+- **annotation list**: Add status, ownership and action buttons
+  ([`3a8ad13`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/3a8ad135fc67f8e90537de94f3669635adc83345))
+
+- **annotation list**: List annotations for each fileset and enable to click items to load them
+  ([`d39f0f7`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/d39f0f7e424ad509d4a23d3fff5bb649821eb8d0))
+
+- **annotations file**: Save annotations as tsv and enable setting annotation file
+  ([`3ff75e1`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/3ff75e1245cf2889ab2f2b7ec299a523b9593341))
+
+
 ## v1.9.0 (2026-09-01)
 
 ### Chores
