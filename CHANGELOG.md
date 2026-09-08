@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v1.13.0 (2026-09-08)
+
+### Bug Fixes
+
+- Quick fixes on UI
+  ([`32d2ab8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/32d2ab859ae9b19083179dcce5fcba5b99dbd365))
+
+- Typo EGG
+  ([`32d2ab8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/32d2ab859ae9b19083179dcce5fcba5b99dbd365))
+
+### Features
+
+- **actions**: Plug submit/unsubmit/approved/reject/delete buttons
+  ([`32d2ab8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/32d2ab859ae9b19083179dcce5fcba5b99dbd365))
+
+- **delete**: Plug delete buttons and open confirmation
+  ([`32d2ab8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/32d2ab859ae9b19083179dcce5fcba5b99dbd365))
+
+- **unsbumit**: Add unsubmit button
+  ([`32d2ab8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/32d2ab859ae9b19083179dcce5fcba5b99dbd365))
+
+
 ## v1.12.0 (2026-09-08)
 
 ### Features
