@@ -1,5 +1,5 @@
 import tempfile
-from asyncio import Task, to_thread
+from asyncio import CancelledError, Task, to_thread
 
 from trame_rca.utils import RcaViewAdapter
 from trame_server import Server
@@ -69,6 +69,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
     def __init__(self, server: Server):
         super().__init__(server, EEGViewerState)
         self.rca_view = RCAView()
+        self.rca_view.annotations_file_changed.connect(self._on_annotations_file_changed)
         self._current_tmpdir: tempfile.TemporaryDirectory[str] | None = None
         self.load_task: Task | None = None
         self.save_task: Task | None = None
@@ -79,6 +80,10 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
 
     def set_ui(self, ui: EEGViewerUI) -> None:
         self.view_handler = ui.rca.create_view_handler(self.rca_view)
+
+    def _on_annotations_file_changed(self, is_outdated: bool) -> None:
+        self.data.is_annotations_file_outdated = is_outdated
+        self.state.flush()
 
     def _cleanup_current_tmpdir(self) -> None:
         if self._current_tmpdir is not None:
@@ -93,8 +98,8 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.rca_view.set_eeg_file(self._current_tmpdir.name, eeg_file_path)
         self.view_handler.update_size(None, self.rca_view.window_size)
 
-    def _set_annotations_asset(self, annotations_asset_path: str) -> None:
-        self.rca_view.set_annotations_asset(annotations_asset_path)
+    def _set_annotations_asset(self, annotations_asset: Asset) -> None:
+        self.rca_view.set_annotations_asset(annotations_asset)
 
     def _update_viewer_mode(
         self, current_eeg_fileset: EEGFileset, current_annotations_file: AnnotationsFile | None
@@ -133,7 +138,8 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
 
             if is_new_eeg_fileset:
                 self._set_files(self.data.eeg_asset.path)
-            self._set_annotations_asset(self.data.annotations_asset.path)
+            self._set_annotations_asset(self.data.annotations_asset)
+            self.data.is_annotations_file_outdated = False
 
         except DatabaseError as e:
             if annotations_file is None:
@@ -170,6 +176,8 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
                 self.data.load_status = LoadStatus.ERROR
                 self.data.status_message = str(e)
                 raise e
+            except CancelledError:
+                self.data.load_status = LoadStatus.LOADED
 
         self.reset_state()
         self.data.load_status = LoadStatus.LOADING
@@ -195,8 +203,9 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
 
             annotations_asset = self.data.annotations_asset
 
-            self.rca_view.save_annotations_asset(self.data.annotations_asset.path)
+            self.rca_view.save_annotations_asset()
             annotations_file: AnnotationsFile = self.ctrl.upload_annotations_file(eeg_fileset, annotations_asset)
+            self.data.is_annotations_file_outdated = False
 
             return annotations_file, f"{annotations_file.name} saved successfully"
 

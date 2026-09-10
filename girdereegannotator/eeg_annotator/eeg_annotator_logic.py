@@ -1,4 +1,4 @@
-from asyncio import Task
+from asyncio import CancelledError, Task
 
 from trame_server import Server
 from trame_server.utils.typed_state import TypedState
@@ -30,6 +30,9 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         self._viewer_logic = EEGViewerLogic(server)
 
         self.bind_changes({self.name.eeg_fileset: self._on_eeg_fileset_updated})
+
+        self.pending_eeg_fileset: EEGFileset | None = None
+        self.pending_annotations_file: AnnotationsFile | None = None
 
     @property
     def eeg_fileset(self) -> EEGFileset:
@@ -72,7 +75,7 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
     def _on_task_finished(self, task: Task) -> None:
         try:
             eeg_fileset, annotations_file = task.result()
-        except EEGViewerError:
+        except (EEGViewerError, CancelledError):
             return
 
         self.eeg_fileset = eeg_fileset
@@ -83,15 +86,24 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
     def _on_annotations_file_selected(self, annotations_file: AnnotationsFile | None = None) -> None:
         self.load_eeg_fileset(self.eeg_fileset, annotations_file)
 
+    def _load_eeg_fileset(self, eeg_fileset: EEGFileset | None, annotations_file: AnnotationsFile | None) -> None:
+        is_new_eeg_fileset = self.eeg_fileset._id != eeg_fileset._id
+        load_task = self._viewer_logic.load_eeg_files(eeg_fileset, annotations_file, is_new_eeg_fileset)
+        load_task.add_done_callback(self._on_task_finished)
+
+        self._clear_pending_files()
+
     def load_eeg_fileset(self, eeg_fileset: EEGFileset | None, annotations_file: AnnotationsFile | None) -> None:
         if eeg_fileset is None:
             self.reset_state()
             return
 
-        is_new_eeg_fileset = self.eeg_fileset._id != eeg_fileset._id
-
-        load_task = self._viewer_logic.load_eeg_files(eeg_fileset, annotations_file, is_new_eeg_fileset)
-        load_task.add_done_callback(self._on_task_finished)
+        if self._viewer_logic.data.is_annotations_file_outdated:
+            self.data.unsaved_annotation_dialog = True
+            self.pending_eeg_fileset = eeg_fileset
+            self.pending_annotations_file = annotations_file
+        else:
+            self._load_eeg_fileset(eeg_fileset, annotations_file)
 
     def _save_annotations_file(self, annotation_status: AnnotationStatus = AnnotationStatus.IN_PROGRESS) -> None:
         save_task = self._viewer_logic.save_annotations_file(self.eeg_fileset, self.annotations_file, annotation_status)
@@ -103,6 +115,29 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
 
         delete_task = self._viewer_logic.delete_annotations_file(self.eeg_fileset, self.annotations_file)
         delete_task.add_done_callback(self._on_task_finished)
+
+    def _clear_pending_files(self) -> None:
+        self.pending_eeg_fileset = None
+        self.pending_annotations_file = None
+
+    def _load_pending_files(self) -> None:
+        if self.pending_eeg_fileset is not None:
+            self._load_eeg_fileset(self.pending_eeg_fileset, self.pending_annotations_file)
+
+    def _on_save_changes_task_finished(self, task: Task) -> None:
+        try:
+            task.result()
+        except (EEGViewerError, CancelledError):
+            return
+
+        self._load_pending_files()
+        self.state.flush()
+
+    def _save_changes_and_load_pending_files(self) -> None:
+        save_task = self._viewer_logic.save_annotations_file(
+            self.eeg_fileset, self.annotations_file, self.annotations_file.status
+        )
+        save_task.add_done_callback(self._on_save_changes_task_finished)
 
     def reset_state(self) -> None:
         super().reset_state()
@@ -117,3 +152,7 @@ class EEGAnnotatorLogic(BaseLogic[EEGAnnotatorState]):
         ui.annotation_saved.connect(self._save_annotations_file)
         ui.annotation_status_changed.connect(self._save_annotations_file)
         ui.annotation_deleted.connect(self._delete_annotations_file)
+
+        ui.unsaved_annotation_dialog.cancel_clicked.connect(self._clear_pending_files)
+        ui.unsaved_annotation_dialog.saved_clicked.connect(self._save_changes_and_load_pending_files)
+        ui.unsaved_annotation_dialog.discard_clicked.connect(self._load_pending_files)

@@ -27,12 +27,13 @@ class AnnotateActions(AnnotationActions):
     annotation_submitted = Signal()
     annotation_deleted = Signal(dict[str, Any])
 
-    def __init__(self, annotation_name: str, annotation_id: str, **kwargs):
+    def __init__(self, annotation_name: str, annotation_id: str, is_annotation_outdated: str, **kwargs):
         super().__init__(**kwargs)
 
         with self:
             self._build_button(
                 click=self.annotation_saved,
+                disabled=(f"!{is_annotation_outdated}",),
                 icon="mdi-content-save-outline",
                 tooltip="Save annotations",
             )
