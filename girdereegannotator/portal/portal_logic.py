@@ -163,7 +163,6 @@ class PortalLogic(BaseLogic[PortalState]):
     def _on_eeg_fileset_selected(
         self, eeg_fileset: EEGFileset, annotations_file: AnnotationsFile | None = None
     ) -> None:
-        self.eeg_fileset = eeg_fileset
         self.data.current_breadcrumbs_element = BreadcrumbsElement.EEG_FILESET
         self.eeg_fileset_selected(eeg_fileset, annotations_file)
 
