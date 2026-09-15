@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v1.14.0 (2026-09-15)
+
+### Bug Fixes
+
+- **breadcrumbs**: Make breadcrumbs readonly on active element
+  ([`fbe9423`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/fbe9423f5131c3249e6ca87ca92016bef0d493e3))
+
+### Continuous Integration
+
+- Add dependabot configuration for github action updates
+  ([`ab21e29`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/ab21e29ed2fa8b0d397872a970095b9394d10d1a))
+
+### Documentation
+
+- Add acknowledgements
+  ([`1f6aece`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/1f6aeced2fc8e4cbf035fa439fe1312ad19699ac))
+
+- Update documentation with How To
+  ([`ce6af7b`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/ce6af7bc244d995a811c5f5327db50395f05d580))
+
+### Features
+
+- **notifications**: Add notifications on annotator actions and
+  ([`5d762c8`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/5d762c8ba8cc6d90484c7a3264af210186b4185b))
+
+
 ## v1.13.0 (2026-09-08)
 
 ### Bug Fixes
