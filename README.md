@@ -94,7 +94,7 @@ file provided in the assets. You can add `--server` to your command line to
 prevent your browser from opening and `--port` to specify the port the server
 should listen to, default is 8080.
 
-## Acknowledgement
+## Acknowledgements
 
-This work was supported by the Agence Nationale de la Recherche (Grant
-ANR-22-CE45-0034).
+This library was funded by the following project :
+[Handling heterogeneous Imaging and signal data for analysing the Neurodevelopmental Trajectories of premature newborns (HINT) ANR project (ANR-22-CE45-0034)](https://anr-hint.pages.in2p3.fr/)
