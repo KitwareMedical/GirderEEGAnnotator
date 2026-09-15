@@ -23,5 +23,6 @@ class AnnotationAuthorFilter(Select):
             v_model=author_state.name.author,
             items=(str([annotator.value for annotator in AnnotationAuthor]),),
             label="Annotation author",
+            rounded=True,
             **kwargs,
         )

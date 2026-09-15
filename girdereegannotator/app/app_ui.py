@@ -7,6 +7,7 @@ from trame_server.core import Server
 
 from girdereegannotator.utils.base_ui import BaseUI
 
+from ..alerts import AlertsUI
 from ..authentication import AuthenticationUI
 from ..eeg_annotator import EEGAnnotatorUI
 from ..portal import PortalUI
@@ -33,8 +34,32 @@ class AnnotatorAppLayout(VAppLayout, BaseUI[AnnotatorAppState]):
             with html.Div(classes="app-bar") as self.app_bar:
                 v3.VIcon(icon="mdi-heart-pulse", size="x-large", color="primary", classes="mx-4")
                 v3.VAppBarTitle(text=(self.name.app_name,))
+
             with v3.VMain(classes="app-main"):
                 self.app_navigation = NavigationCard(self.get_sub_state(self.name.nav_state))
+
+            with v3.VFooter(classes="app-footer") as footer:
+                self.footer = footer
+                footer.add_child(
+                    '<a href="https://kitware.github.io/trame/" '
+                    'class="text-caption text-decoration-none" '
+                    'style="color: rgba(var(--v-theme-on-background), 0.5); "'
+                    'target="_blank">Powered by trame</a>'
+                )
+                v3.VSpacer()
+                footer.add_child(
+                    '<a href="https://anr-hint.pages.in2p3.fr/" '
+                    'class="text-caption text-decoration-none" '
+                    'style="color: rgba(var(--v-theme-on-background), 0.5); "'
+                    'target="_blank">Funded by HINT (ANR-22-CE45-0034)</a>'
+                )
+                v3.VSpacer()
+                footer.add_child(
+                    '<a href="https://www.kitware.com/" '
+                    'class="text-caption text-decoration-none" '
+                    'style="color: rgba(var(--v-theme-on-background), 0.5); "'
+                    'target="_blank">© 2026 Kitware Inc.</a>'
+                )
 
 
 class AnnotatorAppUI:
@@ -65,7 +90,8 @@ class AnnotatorAppUI:
                 ".annotator-window { border: 2px dashed transparent; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; }"
                 ".annotator-window:focus-within { border-color: orange; }"
                 ".app-bar { height: 60px; display: flex; align-items: center; color: rgb(var(--v-theme-secondary)); }"
-                ".app-main { height: calc(100vh - 60px); padding-left: 8px; padding-right: 8px; padding-bottom: 8px }"
+                ".app-footer { height: 25px; padding-top: 5px; padding-bottom: 0; background-color: rgb(var(--v-theme-background)); }"
+                ".app-main { height: calc(100vh - 85px); padding-left: 8px; padding-right: 8px; }"
                 ".breadcrumbs-button { opacity: 1 !important; padding: 0px; } "
                 ".button-bar { display: flex; align-items: center; gap: 8px;}"
                 ".expandable-list { height: calc(100% - 60px); }"
@@ -93,7 +119,7 @@ class AnnotatorAppUI:
                 ".nav-content { height: calc(100% - 65px); padding: 0px; }"
                 ".nav-window { height: 100%; }"
                 ".nav-window-group { height: 100%; overflow: unset; }"
-                ".portal { padding-left: 20px; padding-right: 20px; padding-bottom: 10px; height: 100%;}"
+                ".portal { padding-left: 20px; padding-right: 20px; height: 100%;}"
                 ".portal-toolbar { display: flex; flex-grow: 1; align-items: center; justify-content: end; height: 100%; }"
                 ".remote-controlled-area:focus-visible { outline: none !important; }"
                 ".search-input .v-field { background-color: inherit; }"
@@ -112,6 +138,8 @@ class AnnotatorAppUI:
                 ".viewer__error { height: calc(100% - 5px); }"
                 ".viewer__load { height: 5px; }"
                 ".viewer-status { padding: 6px; width: 36px; height: 36px; }"
+                ".alerts-container:empty { padding: 0; }"
+                ".alerts-container { position: fixed; bottom: 0; right: 0; width: 100%; max-width: 40em; display: grid; grid-gap: 0.5em; z-index: 999; padding: 8px; }"
             )
             with self.bar:
                 self.auth_ui = AuthenticationUI()
@@ -130,6 +158,8 @@ class AnnotatorAppUI:
 
             with self.navigation.annotator_toolbar:
                 self.eeg_annotator_ui.build_toolbar()
+
+            self.alerts_ui = AlertsUI()
 
     @property
     def bar(self) -> html.Div:

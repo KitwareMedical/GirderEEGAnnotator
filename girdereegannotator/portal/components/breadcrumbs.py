@@ -41,10 +41,11 @@ class Breadcrumbs(html.Div):
         v3.VBtn(
             v_if=self._has_breadcrumbs_element(breadcrumbs_element),
             classes="breadcrumbs-button",
-            active=self._is_breadcrumbs_element(breadcrumbs_element),
+            active=(self._is_breadcrumbs_element(breadcrumbs_element),),
             active_color=(f"{self._is_breadcrumbs_element(breadcrumbs_element)} ? 'primary' : 'undefined'",),
             click=self._set_breadcrumbs_element(breadcrumbs_element),
             density="compact",
+            readonly=(self._is_breadcrumbs_element(breadcrumbs_element),),
             ripple=False,
             variant="plain",
             **kwargs,

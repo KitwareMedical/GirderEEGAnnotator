@@ -66,7 +66,7 @@ class AnnotationStatus(Enum):
 @dataclass
 class AnnotationsFile(EEGFile):
     author: User = field(default_factory=User)
-    status: AnnotationStatus = AnnotationStatus.IN_PROGRESS
+    status: AnnotationStatus = AnnotationStatus.UNDEFINED
 
 
 @dataclass(frozen=True)
