@@ -21,6 +21,7 @@ class EEGViewerState:
     eeg_asset: Asset = field(default_factory=Asset)
     annotations_asset: Asset = field(default_factory=Asset)
     mode: RCAViewMode = RCAViewMode.UNDEFINED
+    is_annotations_file_outdated: bool = False
 
 
 class EEGViewerUI(html.Div, BaseUI[EEGViewerState]):

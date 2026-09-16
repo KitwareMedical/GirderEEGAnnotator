@@ -16,6 +16,7 @@ from girdereegannotator.portal.components.eeg_annotation_list import (
     AnnotationDeleteDialog,
 )
 from girdereegannotator.utils.base_ui import BaseUI
+from girdereegannotator.utils.components import Button
 
 from .components import (
     AnnotateActions,
@@ -40,6 +41,7 @@ class EEGAnnotatorState:
     eeg_fileset: EEGFileset = field(default_factory=EEGFileset)
     annotations_file: AnnotationsFile = field(default_factory=AnnotationsFile)
     mode: EEGAnnotatorMode = EEGAnnotatorMode.UNDEFINED
+    unsaved_annotation_dialog: bool = False
 
 
 class EEGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
@@ -62,6 +64,8 @@ class EEGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                 namespace="viewer",
                 on_delete=lambda _annotation_id: self.annotation_deleted(),
             )
+
+            self.unsaved_annotation_dialog = UnsavedAnnotationDialog(model=self.name.unsaved_annotation_dialog)
 
     def build_toolbar(self) -> None:
         v3.VSpacer()
@@ -88,6 +92,7 @@ class EEGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
                     v_if=self._is_annotator_mode(EEGAnnotatorMode.ANNOTATE),
                     annotation_name=self.name.annotations_file.name,
                     annotation_id=self.name.annotations_file._id,
+                    is_annotation_outdated=self.viewer_ui.name.is_annotations_file_outdated,
                 )
                 review_actions = ReviewActions(
                     v_else_if=f"{self._is_annotator_mode(EEGAnnotatorMode.REVIEW)}",
@@ -128,3 +133,37 @@ class EEGAnnotatorUI(html.Div, BaseUI[EEGAnnotatorState]):
         review_actions.annotation_unsubmitted.connect(
             lambda: self.annotation_status_changed(AnnotationStatus.IN_PROGRESS)
         )
+
+
+class UnsavedAnnotationDialog(v3.VDialog):
+    cancel_clicked = Signal()
+    saved_clicked = Signal()
+    discard_clicked = Signal()
+
+    def __init__(self, model: str, **kwargs):
+        super().__init__(v_model=model, width=800, **kwargs)
+
+        with (
+            self,
+            v3.VCard(
+                title="Unsaved changes",
+                text="You have unsaved changes on you current annotations file, do you wish save them ?",
+            ),
+            v3.VCardActions(),
+        ):
+            Button(
+                click=f"{model} = false; trigger('{self.ctrl.trigger_name(self.cancel_clicked)}');",
+                text="Cancel",
+                variant="outlined",
+            )
+            Button(
+                click=f"{model} = false; trigger('{self.ctrl.trigger_name(self.discard_clicked)}');",
+                text="Discard changes",
+                variant="tonal",
+            )
+            Button(
+                click=f"{model} = false; trigger('{self.ctrl.trigger_name(self.saved_clicked)}');",
+                color="primary",
+                text="Save changes",
+                variant="flat",
+            )
