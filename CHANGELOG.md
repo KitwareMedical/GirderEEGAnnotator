@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.15.0 (2026-09-16)
+
+### Features
+
+- **unsaved changes**: Handle unsaved changes before loading other files in viewer
+  ([`49e7993`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/49e7993594f539f19e3736d0e65a1a11a9403dfd))
+
+
 ## v1.14.0 (2026-09-15)
 
 ### Bug Fixes
