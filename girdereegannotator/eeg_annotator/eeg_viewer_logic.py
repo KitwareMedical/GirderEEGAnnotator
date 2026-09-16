@@ -100,6 +100,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
 
     def _set_annotations_asset(self, annotations_asset: Asset) -> None:
         self.rca_view.set_annotations_asset(annotations_asset)
+        self.view_handler.update()
 
     def _update_viewer_mode(
         self, current_eeg_fileset: EEGFileset, current_annotations_file: AnnotationsFile | None
@@ -296,7 +297,7 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
 
                 self._update_viewer_mode(updated_eeg_fileset, None)
 
-                return updated_eeg_fileset, None
+                return updated_eeg_fileset, updated_annotations_file
 
             except EEGViewerError as e:
                 self.ctrl.create_alert(str(e), alert_type=e.alert_type)
