@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.15.1 (2026-09-16)
+
+### Bug Fixes
+
+- **load**: Update rca view after loading annotations file
+  ([`189771e`](https://github.com/KitwareMedical/GirderEEGAnnotator/commit/189771edee690158197ca96b33b1f964baf94766))
+
+
 ## v1.15.0 (2026-09-16)
 
 ### Features
