@@ -1,8 +1,12 @@
 # GirderEEGAnnotator
 
-![GirderEEGAnnotator](https://github.com/user-attachments/assets/37796cb5-840f-4feb-885c-87b1ff2963ea)
+<img src="https://github.com/KitwareMedical/GirderEEGAnnotator/releases/download/v1.15.1/Annotations_list.png" width="650">
+<img src="https://github.com/KitwareMedical/GirderEEGAnnotator/releases/download/v1.15.1/Viewer.png" width="650">
 
 Works only on Linux/Mac, not on Windows.
+
+If you want to run a fully working example with the database setup, you can
+follow [these instructions](./HOW_TO.md).
 
 ## Create environment and install dependencies
 
@@ -32,11 +36,6 @@ Faster Jpeg encoding using TurboJPEG.
 # macOS
 brew install jpeg-turbo
 ```
-
-**Windows install**
-
-Download and install from GitHub:
-https://github.com/libjpeg-turbo/libjpeg-turbo/releases
 
 **Linux install**
 

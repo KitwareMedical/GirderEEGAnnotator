@@ -1,4 +1,6 @@
-Here is an tutorial to run the app from scratch step by step
+Here is a tutorial to run the app from scratch step by step. Due to the
+eegvizlib availability, the GirderEEGAnnotator app can run on Linux and MacOS
+only.
 
 ## How to install Girder with BIDS plugin and import data
 
@@ -26,15 +28,6 @@ deno compile -ERWN -o bids-validator jsr:@bids/validator
 pip install ".[cli]"
 ```
 
-#### Windows
-
-BIDS Validation is not supported but you can still use the plugin and the
-importer (without validation)
-
-```bash
-pip install ".[cli]"
-```
-
 ### 2. Install MongoDB
 
 If MongoDB is not already installed on your machine, you can install it
@@ -57,10 +50,6 @@ Then:
 ```bash
 brew services start mongodb-community
 ```
-
-#### Windows
-
-https://www.mongodb.com/docs/manual/tutorial/install-mongodb-enterprise-on-windows/#std-label-install-enterprise-windows
 
 ### 3. Serve girder
 
