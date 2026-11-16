@@ -79,7 +79,8 @@ class EEGViewerLogic(BaseLogic[EEGViewerState]):
         self.bind_changes({self.name.mode: self.rca_view.update_viewer_mode})
 
     def set_ui(self, ui: EEGViewerUI) -> None:
-        self.view_handler = ui.rca.create_view_handler(self.rca_view)
+        self.view_handler = ui.rca.create_view_handler(self.rca_view, encoder="turbo-jpeg")
+        self.view_handler.update_quality(80, 100)
 
     def _on_annotations_file_changed(self, is_outdated: bool) -> None:
         self.data.is_annotations_file_outdated = is_outdated

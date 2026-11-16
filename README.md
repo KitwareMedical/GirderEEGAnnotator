@@ -43,7 +43,7 @@ brew install jpeg-turbo
 # RHEL/CentOS/Fedora
 # YUM doc: https://libjpeg-turbo.org/Downloads/YUM
 # Ubuntu
-apt-get install libturbojpeg
+apt-get install libjpeg-turbo-official
 ```
 
 Once your system is ready, you can install the dependencies:
